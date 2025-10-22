@@ -144,7 +144,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             # Check connection
             is_connected = await self.hass.async_add_executor_job(
-                self.aira.ble.is_connected()
+                self.aira.ble.is_connected
             )
             
             # Get RSSI from Home Assistant's bluetooth integration
@@ -160,14 +160,14 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                     service_info = bluetooth.async_last_service_info(
                         self.hass, mac_address, connectable=True
                     )
-                    if service_info:
+                    if service_info and service_info.rssi is not None:
                         rssi = service_info.rssi
                 except Exception:
                     # Fallback: try getting from device
                     rssi = await self.hass.async_add_executor_job(
                         self.aira.ble.get_rssi
                     )
-
+                    _LOGGER.debug("Fallback RSSI fetch used")
             if not is_connected:
                 if self._reconnect_attempts < self._max_reconnect_attempts:
                     _LOGGER.debug(

@@ -17,5 +17,5 @@
     }
   ],
   "dependencies": [],
-  "after_dependencies": ["bluetooth"]
+  "after_dependencies": ["bluetooth", "esphome"]
 }

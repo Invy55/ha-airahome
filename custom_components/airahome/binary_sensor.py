@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from functools import cached_property
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -28,18 +29,62 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     
     binary_sensors: list[BinarySensorEntity] = [
-        AiraConnectionBinarySensor(coordinator, entry),
-        AiraManualModeBinarySensor(coordinator, entry),
-        AiraNightModeBinarySensor(coordinator, entry),
-        AiraAwayModeBinarySensor(coordinator, entry),
-        AiraInlineHeaterBinarySensor(coordinator, entry),
-        AiraHotWaterHeatingBinarySensor(coordinator, entry),
-        AiraDefrostingBinarySensor(coordinator, entry),
+        AiraBinarySensor(coordinator, entry,
+            name="Connection",
+            unique_id_suffix="connection",
+            data_path=("connected", ),
+            device_class=BinarySensorDeviceClass.CONNECTIVITY,
+            icon=("mdi:bluetooth-off", "mdi:bluetooth-connect"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="Manual Mode",
+            unique_id_suffix="manual_mode",
+            data_path=("state", "manual_mode_enabled"),
+            device_class=None,
+            icon=("mdi:hand-back-right-off-outline", "mdi:hand-back-right-outline"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="Night Mode",
+            unique_id_suffix="night_mode",
+            data_path=("state", "night_mode_enabled"),
+            device_class=None,
+            icon=("mdi:sleep-off", "mdi:sleep"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="Away Mode",
+            unique_id_suffix="away_mode",
+            data_path=("state", "away_mode_enabled"),
+            device_class=None,
+            icon=("mdi:home-outline", "mdi:home-export-outline"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="Inline Heater",
+            unique_id_suffix="inline_heater",
+            data_path=("state", "inline_heater_active"),
+            device_class=BinarySensorDeviceClass.HEAT,
+            icon=("mdi:power-plug-off-outline", "mdi:resistor"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="DHW Heating",
+            unique_id_suffix="dhw_heating",
+            data_path=("state", "hot_water", "heating_enabled"),
+            device_class=BinarySensorDeviceClass.HEAT,
+            icon=("mdi:water-boiler-off", "mdi:water-boiler"),
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name="Defrosting",
+            unique_id_suffix="defrosting",
+            data_path=("system_check", "megmet_status", "outdoor_unit_defrosting"),
+            icon=("mdi:sun-snowflake-variant", "mdi:snowflake-melt"),
+        ),
         AiraAlarmsBinarySensor(coordinator, entry),
     ]
     
     async_add_entities(binary_sensors)
 
+# ============================================================================
+# BINARY SENSORS
+# ===========================================================================
 
 class AiraBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Base class for Aira binary sensors."""
@@ -47,19 +92,11 @@ class AiraBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def __init__(
         self,
         coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-        sensor_type: str,
-        name: str,
-        device_class: BinarySensorDeviceClass | None = None,
+        entry: ConfigEntry
     ) -> None:
         """Initialise the binary sensor."""
         super().__init__(coordinator)
-        self._entry = entry
-        self._sensor_type = sensor_type
-        self._attr_name = name
-        self._attr_device_class = device_class
-        self._attr_unique_id = f"{entry.entry_id}_{sensor_type}"
-        self._attr_has_entity_name = True
+        self._entry_id = entry.entry_id
         
         # Link to device
         self._attr_device_info = {
@@ -69,174 +106,61 @@ class AiraBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
             "model": "Heat Pump",
         }
 
-
-class AiraConnectionBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for BLE connection status."""
-
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise connection binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "connection",
-            "Connection",
-            BinarySensorDeviceClass.CONNECTIVITY,
-        )
-
-    @property
-    def is_on(self) -> bool:
-        """Return true if connected."""
-        return self.coordinator.data.get("connected", False)
-
-
-class AiraManualModeBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for manual mode status."""
+class AiraBinarySensor(AiraBaseBinarySensor):
+    """Generic binary sensor for Aira."""
 
     def __init__(
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
+        name: str,
+        unique_id_suffix: str,
+        data_path: tuple[str, ...],
+        device_class: BinarySensorDeviceClass | None = None,
+        icon: str | tuple[str, str] = ("toggle-switch-off-outline", "toggle-switch-outline"),
     ) -> None:
-        """Initialise manual mode binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "manual_mode",
-            "Manual Mode",
-        )
+        """Initialise generic binary sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_name = name
+        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_device_class = device_class
+        self._data_path = data_path
+        self._icon = icon
 
-    @property
+    @cached_property
     def is_on(self) -> bool | None:
-        """Return true if manual mode is enabled."""
-        state = self.coordinator.data.get("state", {})
-        return state.get("manual_mode_enabled")
+        """Return true if the sensor is on."""
+        if not self.coordinator.data:
+            return None
 
+        if self._data_path:
+            value = self.coordinator.data
+            try:
+                for path in self._data_path:
+                    value = value[path]
 
-class AiraNightModeBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for night mode status."""
+                return bool(value)
+            except (KeyError, ValueError, TypeError):
+                return None
+        return None
 
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise night mode binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "night_mode",
-            "Night Mode",
-        )
+    @cached_property
+    def icon(self) -> str:
+        """Return the icon to use for the binary sensor."""
+        if isinstance(self._icon, tuple):
+            return self._icon[1] if self.is_on else self._icon[0]
+        return self._icon
 
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if night mode is enabled."""
-        state = self.coordinator.data.get("state", {})
-        return state.get("night_mode_enabled")
-
-
-class AiraAwayModeBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for away mode status."""
-
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise away mode binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "away_mode",
-            "Away Mode",
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if away mode is enabled."""
-        state = self.coordinator.data.get("state", {})
-        return state.get("away_mode_enabled")
-
-
-class AiraInlineHeaterBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for inline heater status."""
-
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise inline heater binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "inline_heater",
-            "Inline Heater",
-            BinarySensorDeviceClass.HEAT,
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if inline heater is active."""
-        state = self.coordinator.data.get("state", {})
-        return state.get("inline_heater_active")
-
-
-class AiraHotWaterHeatingBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for hot water heating status."""
-
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise hot water heating binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "hot_water_heating",
-            "Hot Water Heating",
-            BinarySensorDeviceClass.HEAT,
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if hot water heating is enabled."""
-        state = self.coordinator.data.get("state", {})
-        hot_water = state.get("hot_water", {})
-        return hot_water.get("heating_enabled")
-
-
-class AiraDefrostingBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for defrosting status."""
-
-    def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialise defrosting binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "defrosting",
-            "Defrosting",
-        )
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return true if unit is defrosting."""
-        system_check = self.coordinator.data.get("system_check", {})
-        megmet_status = system_check.get("megmet_status", {})
-        return megmet_status.get("outdoor_unit_defrosting")
-
+# ============================================================================
+# ALARM SENSOR
+# ===========================================================================
 
 class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
     """Binary sensor for alarms status."""
+
+    _attr_name = "Alarms"
+    _attr_unique_id = "alarms"
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(
         self,
@@ -244,13 +168,7 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         entry: ConfigEntry,
     ) -> None:
         """Initialise alarms binary sensor."""
-        super().__init__(
-            coordinator,
-            entry,
-            "alarms",
-            "Alarms",
-            BinarySensorDeviceClass.PROBLEM,
-        )
+        super().__init__(coordinator, entry)
 
     @property
     def is_on(self) -> bool:
@@ -284,4 +202,3 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
                 attributes[f"error_{i}_message"] = error.get("message", "Unknown")
         
         return attributes
-
