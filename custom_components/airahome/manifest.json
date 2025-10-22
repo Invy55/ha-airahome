@@ -1,0 +1,21 @@
+{
+  "domain": "airahome",
+  "name": "AiraHome",
+  "codeowners": ["@invy55", "@pavlick"],
+  "config_flow": true,
+  "documentation": "https://github.com/invy55/ha-airahome",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
+  "integration_type": "device",
+  "requirements": [
+    "pyairahome==2.0.9"
+  ],
+  "version": "0.2.2",
+  "bluetooth": [
+    {
+      "connectable": true
+    }
+  ],
+  "dependencies": [],
+  "after_dependencies": ["bluetooth"]
+}

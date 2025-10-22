@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Aira Cloud",
+        "description": "Enter your Aira account credentials to list your avaiable devices",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "select_device": {
+        "title": "Select Your Heat Pump",
+        "description": "Found **{device_count} device(s)** in your Aira account. Select the heat pump you want to add",
+        "data": {
+          "device": "Device"
+        }
+      },
+      "configure": {
+        "title": "Configure Data Polling",
+        "description": "Set how often data should be fetched from your heat pump. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      },
+      "manual_entry": {
+        "title": "Enter MAC Address",
+        "description": "Enter the Bluetooth MAC address of your Aira Heat Pump",
+        "data": {
+          "mac_address": "MAC Address"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Confirm Aira Heat Pump",
+        "description": "Discovered device: **{name}**\nMAC Address: `{address}`\n\nDo you want to add this device?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the device. Please check the MAC address and ensure the device is powered on and within range.",
+      "invalid_mac": "Invalid MAC address format. Please use format XX:XX:XX:XX:XX:XX",
+      "invalid_auth": "Invalid email or password. Please check your credentials.",
+      "no_devices_found": "No devices found in your Aira account.",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "bluetooth_unavailable": "Bluetooth is not available. Please ensure Bluetooth is enabled on your Home Assistant host.",
+      "device_not_found": "Invalid device. Selected device was not found.",
+      "ble_device_not_found": "BLE device not found. Make sure your heat pump is powered on and within Bluetooth range (10-30m). If the device is too far try using esphome bluetooth repeaters.",
+      "cannot_connect": "Failed to connect to the selected device. Please ensure your heat pump is powered on and within range.",
+      "not_aira_device": "The discovered device is not an Aira Heat Pump.",
+      "unknown": "An unexpected error occurred during setup."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Aira Heat Pump",
+        "description": "Update the settings for your Aira Heat Pump",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    }
+  }
+}
