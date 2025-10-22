@@ -376,7 +376,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 raise UpdateFailed(f"Initial data fetch failed: {data_err}")
             
         except Exception as err:
-            _LOGGER.error("Error in coordinator update: %s", err)
+            _LOGGER.error("Error in coordinator update: %s", err, exc_info=True)
             
             # Increment consecutive failure counter
             self._consecutive_failures += 1
