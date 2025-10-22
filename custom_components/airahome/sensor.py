@@ -385,7 +385,7 @@ async def async_setup_entry(
         # _LOGGER.debug("  flow_data keys: %s", coordinator.data.get("flow_data", {}))
         # _LOGGER.debug("  system_check keys: %s", coordinator.data.get("system_check", {}))
         _LOGGER.debug("  state keys: %s", list(coordinator.data.get("state", {}).keys()))
-        _LOGGER.debug("  flow_data keys: %s", list(coordinator.data.get("flow_data", {}).keys()))
+        # _LOGGER.debug("  flow_data keys: %s", list(coordinator.data.get("flow_data", {}).keys()))
         _LOGGER.debug("  system_check keys: %s", list(coordinator.data.get("system_check", {}).keys()))
     else:
         _LOGGER.warning("Coordinator data is empty - this will cause sensor issues")

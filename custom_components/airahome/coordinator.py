@@ -55,7 +55,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         # Initialize with empty but valid data structure to prevent sensor crashes
         self.data = {
             "state": {},
-            "flow_data": {},
+            # "flow_data": {},
             "system_check": {},
             "connected": False,
             "rssi": None,
@@ -66,12 +66,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             partial(self.aira.ble.get_states, raw=False)
         )
 
-        await asyncio.sleep(0.5)  # Small delay to avoid overwhelming the device
-        flow_data = await self.hass.async_add_executor_job(
-            partial(self.aira.ble.get_flow_data, raw=False)
-        )
+        #await asyncio.sleep(0.5)  # Small delay to avoid overwhelming the device
+        #flow_data = await self.hass.async_add_executor_job(
+        #    partial(self.aira.ble.get_flow_data, raw=False)
+        #)
 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.0)  # Small delay to avoid overwhelming the device
         system_check = await self.hass.async_add_executor_job(
             partial(self.aira.ble.get_system_check_state, raw=False)
         )
@@ -97,7 +97,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         
         # Build result, merging with stale data if some fetches failed
         state_dict = state_data.get("state", {}) if state_data else {}
-        flow_dict = flow_data.get("main_pump_flow", {}) if flow_data else {}
+        #flow_dict = flow_data.get("main_pump_flow", {}) if flow_data else {}
         system_dict = system_check.get("system_check_state", {}) if system_check else {}
 
         successful = True
@@ -107,9 +107,9 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 state_dict = self._last_successful_data["state"]
                 successful = False
                 _LOGGER.debug("Using stale state data due to empty fetch")
-            if not flow_dict and self._last_successful_data.get("flow_data"):
-                flow_dict = self._last_successful_data["flow_data"]
-                _LOGGER.debug("Using stale flow data due to empty fetch")
+            #if not flow_dict and self._last_successful_data.get("flow_data"):
+            #    flow_dict = self._last_successful_data["flow_data"]
+            #    _LOGGER.debug("Using stale flow data due to empty fetch")
             if not system_dict and self._last_successful_data.get("system_check"):
                 system_dict = self._last_successful_data["system_check"]
                 _LOGGER.debug("Using stale system_check data due to empty fetch")
@@ -119,7 +119,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
 
         result = {
             "state": state_dict,
-            "flow_data": flow_dict,
+            #"flow_data": flow_dict,
             "system_check": system_dict,
             "connected": True,
             "rssi": rssi,
