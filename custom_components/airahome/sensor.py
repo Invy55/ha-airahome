@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from functools import cached_property
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -455,7 +454,7 @@ class AiraTemperatureSensor(AiraSensorBase):
         self._index = index
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -495,7 +494,7 @@ class AiraScheduledTemperatureSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_scheduled_temp"
         
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         try:
             value = None
@@ -557,7 +556,7 @@ class AiraHumiditySensor(AiraSensorBase):
         self._index = index
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -614,7 +613,7 @@ class AiraSignalStrengthSensor(AiraSensorBase):
         self._index = index
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         if not self.coordinator.data:
             return None
@@ -638,7 +637,7 @@ class AiraSignalStrengthSensor(AiraSensorBase):
                 return None
         return None
     
-    @cached_property
+    @property
     def icon(self) -> str:
         """Return the icon based on signal strength."""
         value = self.native_value
@@ -684,7 +683,7 @@ class AiraVoltageSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -725,7 +724,7 @@ class AiraCurrentSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -773,7 +772,7 @@ class AiraPowerSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -826,7 +825,7 @@ class AiraEnergySensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -873,7 +872,7 @@ class AiraInstantHeatSensor(AiraSensorBase):
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         """Return the state."""
         # heat output (W) = specific heat (J/kg.K) x flow rate (kg/s) x DT (K)
@@ -918,7 +917,7 @@ class AiraPressureSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -962,7 +961,7 @@ class AiraRotationSpeedSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         if not self.coordinator.data:
             return None
@@ -994,7 +993,7 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_energy_balance"
 
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         """Return the state."""
         energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
@@ -1027,7 +1026,7 @@ class AiraFlowRateSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         if not self.coordinator.data:
             return None
@@ -1043,7 +1042,7 @@ class AiraFlowRateSensor(AiraSensorBase):
                 return 0
         return None
 
-    @cached_property
+    @property
     def icon(self) -> str:
         """Return the icon based on flow rate."""
         value = self.native_value
@@ -1079,7 +1078,7 @@ class AiraFrequencySensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         if not self.coordinator.data:
             return None
@@ -1122,7 +1121,7 @@ class AiraPercentageSensor(AiraSensorBase):
         self._attr_icon = icon
         self._attr_entity_registry_enabled_default = enabled_by_default
     
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         if not self.coordinator.data:
             return None
@@ -1155,7 +1154,7 @@ class AiraEEVStepSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_eev_step"
 
-    @cached_property
+    @property
     def native_value(self) -> int | None:
         """Return the state."""
         outdoor_unit = self.coordinator.data["system_check"].get("megmet_status", {})
@@ -1190,7 +1189,7 @@ class AiraEnumSensor(AiraSensorBase):
         self._replace = replace
         self._attr_entity_registry_enabled_default = enabled_by_default
     
-    @cached_property
+    @property
     def native_value(self) -> str | None:
         if not self.coordinator.data:
             return None
@@ -1223,13 +1222,13 @@ class AiraLEDPatternSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_led_pattern"
 
-    @cached_property
+    @property
     def native_value(self) -> str | None:
         """Return the state."""
         pattern = self.coordinator.data["state"].get("led_pattern", "")
         return pattern.replace("LED_PATTERN_", "").replace("_", " ").title()
 
-    @cached_property
+    @property
     def icon(self) -> str:
         """Return the icon based on LED pattern."""
         pattern = self.native_value.upper()
@@ -1280,7 +1279,7 @@ class AiraInstantCOPSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_instant_cop"
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         """Return the state."""
         try:
@@ -1311,7 +1310,7 @@ class AiraCumulativeCOPSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_cumulative_cop"
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         """Return the state."""
         try:
@@ -1339,7 +1338,7 @@ class AiraDeviceCOPSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_reported_cop"
 
-    @cached_property
+    @property
     def native_value(self) -> float | None:
         """Return the state."""
         energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})

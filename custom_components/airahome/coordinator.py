@@ -194,6 +194,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                     # Reset counter for next update cycle
                     self._reconnect_attempts = 0
+                    # TODO PROBABLY RAISE AND STOP HERE
             
             # If not connected, check if we have recent stale data to return
                 if self._last_successful_data and self._last_successful_timestamp:

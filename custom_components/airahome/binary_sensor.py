@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from functools import cached_property
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -127,7 +126,7 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         self._data_path = data_path
         self._icon = icon
 
-    @cached_property
+    @property
     def is_on(self) -> bool | None:
         """Return true if the sensor is on."""
         if not self.coordinator.data:
@@ -144,7 +143,7 @@ class AiraBinarySensor(AiraBaseBinarySensor):
                 return None
         return None
 
-    @cached_property
+    @property
     def icon(self) -> str:
         """Return the icon to use for the binary sensor."""
         if isinstance(self._icon, tuple):
