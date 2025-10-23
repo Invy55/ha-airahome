@@ -76,9 +76,27 @@ async def async_setup_entry(
             data_path=("system_check", "megmet_status", "outdoor_unit_defrosting"),
             icon=("mdi:sun-snowflake-variant", "mdi:snowflake-melt"),
         ),
+        AiraBinarySensor(coordinator, entry,
+            name="OU Primary Circulator",
+            unique_id_suffix="ou_pump",
+            data_path=("system_check", "circulation_pump_status", "pump0_active"),
+            icon=("mdi:pump-off", "mdi:pump"),
+            enabled_by_default=False
+        ),
         AiraAlarmsBinarySensor(coordinator, entry),
     ]
     
+    # PER ZONE LOOP
+    for i in range(1, coordinator.data.get("state", {}).get("number_of_zones", 2) + 1):  # Zones 1 and 2, falls back to 2
+        binary_sensors.extend([
+        AiraBinarySensor(coordinator, entry,
+            name=f"Zone {i} Circulator",
+            unique_id_suffix=f"zone_{i}_circulator",
+            data_path=("system_check", "circulation_pump_status", f"pump{i}_active"),
+            icon=("mdi:pump-off", "mdi:pump")
+        )
+        ])
+
     async_add_entities(binary_sensors)
 
 # ============================================================================
@@ -116,6 +134,7 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         data_path: tuple[str, ...],
         device_class: BinarySensorDeviceClass | None = None,
         icon: str | tuple[str, str] = ("toggle-switch-off-outline", "toggle-switch-outline"),
+        enabled_by_default: bool = True
     ) -> None:
         """Initialise generic binary sensor."""
         super().__init__(coordinator, entry)
@@ -125,6 +144,7 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         self._attr_device_class = device_class
         self._data_path = data_path
         self._icon = icon
+        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
     def is_on(self) -> bool | None:
@@ -188,9 +208,9 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         errors = state.get("errors", [])
         
         attributes = {
-            "stopping_alarms": error_meta.get("hp_has_stopping_alarms", False),
-            "acknowledgeable_alarms": error_meta.get("hp_has_acknowledgeable_alarms", False),
-            "compressor_alarms": error_meta.get("compressor_has_stopping_alarm", False),
+            "stopping_alarms": "🚨" if error_meta.get("hp_has_stopping_alarms", False) else "🟢",
+            "acknowledgeable_alarms": "🚨" if error_meta.get("hp_has_acknowledgeable_alarms", False) else "🟢",
+            "compressor_alarms": "🚨" if error_meta.get("compressor_has_stopping_alarm", False) else "🟢",
             "error_count": len(errors),
         }
         
