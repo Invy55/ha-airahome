@@ -29,7 +29,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_NAME, DEFAULT_SHORT_NAME, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -408,10 +408,10 @@ class AiraSensorBase(CoordinatorEntity, SensorEntity):
     ) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator)
-        self._entry_id = entry.entry_id
+        self._device_uuid = entry.data[CONF_DEVICE_UUID]
         
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
+            "identifiers": {(DOMAIN, self._device_uuid)},
             "name": entry.data.get(CONF_DEVICE_NAME, DEFAULT_SHORT_NAME),
             "manufacturer": "Aira",
             "model": "Heat Pump",
@@ -446,7 +446,7 @@ class AiraTemperatureSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._divide_by_10 = divide_by_10
         # if string: ZONE_1 or ZONE_2
@@ -492,7 +492,7 @@ class AiraScheduledTemperatureSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_scheduled_temp"
+        self._attr_unique_id = f"{self._device_uuid}_scheduled_temp"
         
     @property
     def native_value(self) -> float | None:
@@ -548,7 +548,7 @@ class AiraHumiditySensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._divide_by_10 = divide_by_10
         # if string: ZONE_1 or ZONE_2
@@ -605,7 +605,7 @@ class AiraSignalStrengthSensor(AiraSensorBase):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
 
         # if string: ZONE_1 or ZONE_2
@@ -679,7 +679,7 @@ class AiraVoltageSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -720,7 +720,7 @@ class AiraCurrentSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -768,7 +768,7 @@ class AiraPowerSensor(AiraSensorBase):
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._original_unit = original_unit
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -821,7 +821,7 @@ class AiraEnergySensor(AiraSensorBase):
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._original_unit = original_unit
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -868,7 +868,7 @@ class AiraInstantHeatSensor(AiraSensorBase):
             ) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_instant_heat_{unit_of_measurement.lower()}"
+        self._attr_unique_id = f"{self._device_uuid}_instant_heat_{unit_of_measurement.lower()}"
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -913,7 +913,7 @@ class AiraPressureSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -957,7 +957,7 @@ class AiraRotationSpeedSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -991,7 +991,7 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_energy_balance"
+        self._attr_unique_id = f"{self._device_uuid}_energy_balance"
 
     @property
     def native_value(self) -> int | None:
@@ -1022,7 +1022,7 @@ class AiraFlowRateSensor(AiraSensorBase):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -1074,7 +1074,7 @@ class AiraFrequencySensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -1116,7 +1116,7 @@ class AiraPercentageSensor(AiraSensorBase):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_icon = icon
         self._attr_entity_registry_enabled_default = enabled_by_default
@@ -1152,7 +1152,7 @@ class AiraEEVStepSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_eev_step"
+        self._attr_unique_id = f"{self._device_uuid}_eev_step"
 
     @property
     def native_value(self) -> int | None:
@@ -1184,7 +1184,7 @@ class AiraEnumSensor(AiraSensorBase):
         super().__init__(coordinator, entry)
         self._attr_name = name
         self._attr_icon = icon
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._replace = replace
         self._attr_entity_registry_enabled_default = enabled_by_default
@@ -1220,7 +1220,7 @@ class AiraLEDPatternSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_led_pattern"
+        self._attr_unique_id = f"{self._device_uuid}_led_pattern"
 
     @property
     def native_value(self) -> str | None:
@@ -1277,7 +1277,7 @@ class AiraInstantCOPSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_instant_cop"
+        self._attr_unique_id = f"{self._device_uuid}_instant_cop"
 
     @property
     def native_value(self) -> float | None:
@@ -1308,7 +1308,7 @@ class AiraCumulativeCOPSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_cumulative_cop"
+        self._attr_unique_id = f"{self._device_uuid}_cumulative_cop"
 
     @property
     def native_value(self) -> float | None:
@@ -1336,7 +1336,7 @@ class AiraDeviceCOPSensor(AiraSensorBase):
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_reported_cop"
+        self._attr_unique_id = f"{self._device_uuid}_reported_cop"
 
     @property
     def native_value(self) -> float | None:

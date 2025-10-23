@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_NAME, DEFAULT_SHORT_NAME, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -95,11 +95,10 @@ class AiraBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
     ) -> None:
         """Initialise the binary sensor."""
         super().__init__(coordinator)
-        self._entry_id = entry.entry_id
+        self._device_uuid = entry.data[CONF_DEVICE_UUID]
         
-        # Link to device
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
+            "identifiers": {(DOMAIN, self._device_uuid)},
             "name": entry.data.get(CONF_DEVICE_NAME, DEFAULT_SHORT_NAME),
             "manufacturer": "Aira",
             "model": "Heat Pump",
@@ -121,7 +120,8 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         """Initialise generic binary sensor."""
         super().__init__(coordinator, entry)
         self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{unique_id_suffix}"
+
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._attr_device_class = device_class
         self._data_path = data_path
         self._icon = icon
@@ -158,7 +158,6 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
     """Binary sensor for alarms status."""
 
     _attr_name = "Alarms"
-    _attr_unique_id = "alarms"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(
@@ -168,6 +167,7 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
     ) -> None:
         """Initialise alarms binary sensor."""
         super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{self._device_uuid}_alarms"
 
     @property
     def is_on(self) -> bool:
