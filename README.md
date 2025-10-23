@@ -24,7 +24,6 @@
 ## 📝 Table of Contents
 - [About](#about)
 - [Getting Started](#getting_started)
-- [Usage](#usage)
 - [TODO](#todo)
 - [Disclaimer](#disclaimer)
 
