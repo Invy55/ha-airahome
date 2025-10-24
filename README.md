@@ -10,9 +10,9 @@
   ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-41BDF5)
   ![HACS](https://img.shields.io/badge/HACS-Custom-blue)
   ![Privacy](https://img.shields.io/badge/data-local_only-important)
-  [![GitHub Issues](https://img.shields.io/github/issues/invy55/pyairahome)](https://github.com/invy55/pyairahome/issues)
-  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/invy55/pyairahome)](https://github.com/invy55/pyairahome/pulls)
-  ![GitHub License](https://img.shields.io/github/license/invy55/pyairahome)
+  [![GitHub Issues](https://img.shields.io/github/issues/invy55/ha-airahome)](https://github.com/invy55/ha-airahome/issues)
+  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/invy55/ha-airahome)](https://github.com/invy55/ha-airahome/pulls)
+  ![GitHub License](https://img.shields.io/github/license/invy55/ha-airahome)
 </div>
 
 ---
