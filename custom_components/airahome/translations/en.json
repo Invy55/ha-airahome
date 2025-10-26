@@ -62,5 +62,16 @@
         }
       }
     }
+  },
+  "errors": {
+    "temperature_not_provided": {
+      "message": "Temperature not provided"
+    },
+    "invalid_temperature": {
+      "message": "Temperature must be one of: {allowed_temperatures}°C. Received: {temperature}°C. Use + / - button if unsure."
+    },
+    "scheduler_active": {
+      "message": "Cannot set temperature while scheduler is active. Please disable the scheduler first."
+    }
   }
 }

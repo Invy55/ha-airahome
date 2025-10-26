@@ -73,6 +73,18 @@ async def async_setup_entry(
         # === OUTDOOR UNIT SENSORS ===
         # Temperatures
         AiraTemperatureSensor(coordinator, entry,
+            name="OU Supply Temperature",
+            unique_id_suffix="ou_supply_temp",
+            data_path=("system_check", "sensor_values", "outdoor_unit_supply_temperature"),
+            icon="mdi:thermometer-water"
+        ),
+        AiraTemperatureSensor(coordinator, entry,
+            name="OU Return Temperature",
+            unique_id_suffix="ou_return_temp",
+            data_path=("system_check", "sensor_values", "outdoor_unit_return_temperature"),
+            icon="mdi:thermometer-water"
+        ),
+        AiraTemperatureSensor(coordinator, entry,
             name="OU Evaporator Coil Temperature",
             unique_id_suffix="evaporator_coil_temp",
             data_path=("system_check", "megmet_status", "evaporator_coil_temperature"),

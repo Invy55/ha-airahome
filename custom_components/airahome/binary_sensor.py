@@ -94,6 +94,14 @@ async def async_setup_entry(
             unique_id_suffix=f"zone_{i}_circulator",
             data_path=("system_check", "circulation_pump_status", f"pump{i}_active"),
             icon=("mdi:pump-off", "mdi:pump")
+        ),
+        AiraBinarySensor(coordinator, entry,
+            name=f"Thermostat {i} Low Battery",
+            unique_id_suffix=f"thermostat_{i}_low_battery",
+            data_path=("state", "thermostats", "last_update", "warning_low_battery_level"),
+            device_class=BinarySensorDeviceClass.BATTERY,
+            icon=("mdi:battery", "mdi:battery-alert-variant-outline"),
+            index=f"ZONE_{i}"
         )
         ])
 
@@ -134,7 +142,8 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         data_path: tuple[str, ...],
         device_class: BinarySensorDeviceClass | None = None,
         icon: str | tuple[str, str] = ("toggle-switch-off-outline", "toggle-switch-outline"),
-        enabled_by_default: bool = True
+        enabled_by_default: bool = True,
+        index: int | str | None = None
     ) -> None:
         """Initialise generic binary sensor."""
         super().__init__(coordinator, entry)
@@ -144,6 +153,7 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         self._attr_device_class = device_class
         self._data_path = data_path
         self._icon = icon
+        self._index = index
         self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
@@ -157,6 +167,14 @@ class AiraBinarySensor(AiraBaseBinarySensor):
             try:
                 for path in self._data_path:
                     value = value[path]
+                    if self._index is not None and isinstance(value, list):
+                        for element in value:
+                            # caso in cui l'elemento ha un campo zone:
+                            if isinstance(self._index, str) and element.get("zone") == self._index:
+                                value = element
+                                break
+                        if isinstance(self._index, int) and len(value) >= self._index:
+                            value = value[self._index - 1]  # Adjust for 0-based index
 
                 return bool(value)
             except (KeyError, ValueError, TypeError):

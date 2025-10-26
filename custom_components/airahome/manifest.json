@@ -8,7 +8,7 @@
   "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
   "integration_type": "device",
   "requirements": [
-    "pyairahome==2.0.9"
+    "pyairahome==2.1.0"
   ],
   "version": "0.2.2",
   "bluetooth": [
@@ -16,6 +16,6 @@
       "connectable": true
     }
   ],
-  "dependencies": [],
+  "dependencies": ["bluetooth"],
   "after_dependencies": ["bluetooth", "esphome"]
 }
