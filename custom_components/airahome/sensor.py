@@ -889,7 +889,7 @@ class AiraInstantHeatSensor(AiraSensorBase):
         # heat output (W) = 4200 J/kg.K x 0.25 kg/s x 5K = 5250 W
         try:
             flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
-            specific_heat = 4200  # J/kg.K
+            specific_heat = 4186  # J/kg.K
             dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
             heat_output_w = specific_heat * flow * dt  # in Watts
             if self._attr_native_unit_of_measurement == UnitOfPower.KILO_WATT:
@@ -1294,7 +1294,7 @@ class AiraInstantCOPSensor(AiraSensorBase):
         """Return the state."""
         try:
             flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
-            specific_heat = 4200  # J/kg.K
+            specific_heat = 4186  # J/kg.K
             dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
             heat_output_w = specific_heat * flow * dt  # in Watts
             energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
