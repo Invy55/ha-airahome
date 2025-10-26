@@ -654,14 +654,12 @@ class AiraSignalStrengthSensor(AiraSensorBase):
         """Return the icon based on signal strength."""
         value = self.native_value
         if value is None:
-            return "mdi:signal-off"
-        elif value >= -67:
-            return "mdi:signal-cellular-4"
-        elif -70 <= value < -67:
+            return "mdi:bluetooth-off"
+        elif value >= -60:
             return "mdi:signal-cellular-3"
-        elif -80 <= value < -70:
+        elif -70 <= value < -60:
             return "mdi:signal-cellular-2"
-        elif -90 <= value < -80:
+        elif -80 <= value < -70:
             return "mdi:signal-cellular-1"
         else:
             return "mdi:signal-cellular-outline"

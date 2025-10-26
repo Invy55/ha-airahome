@@ -102,8 +102,7 @@ class AiraWaterHeater(WaterHeaterEntity):
             translations = await translation.async_get_translations(
                 self.hass, self.hass.config.language, "errors", {DOMAIN}
             )
-            _LOGGER.debug("Got translations: %s", translations)
-            
+
             # The full path for component translations
             # component.airahome.state.invalid_temperature.message
             translation_key = f"component.{DOMAIN}.errors.{key}.message"
@@ -168,7 +167,6 @@ class AiraWaterHeater(WaterHeaterEntity):
         try:
             # Run the blocking operation in the executor
             updates = await self.hass.async_add_executor_job(run_command)
-            _LOGGER.debug("Received updates: %s", updates)
             if "succeeded" in updates[-1]:
                 return True
         except RuntimeError as e:
@@ -251,7 +249,7 @@ class AiraWaterHeater(WaterHeaterEntity):
                     await self._fake_temperature_set(temp)
                     return
 
-        _LOGGER.debug("Set temperature process completed. Refreshing state.")
+        #_LOGGER.debug("Set temperature process completed. Refreshing state.")
         await self._fake_temperature_set(previous_temp)  # Ensure state is consistent
         self.async_write_ha_state()
 
