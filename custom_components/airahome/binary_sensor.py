@@ -87,7 +87,12 @@ async def async_setup_entry(
     ]
     
     # PER ZONE LOOP
-    for i in range(1, coordinator.data.get("state", {}).get("number_of_zones", 2) + 1):  # Zones 1 and 2, falls back to 2
+    num_zone = set()
+    for thermostat in coordinator.data.get("state", {}).get("thermostats", []):
+        if thermostat.get("serial_number") and thermostat.get("zone"):
+            num_zone.add(int(thermostat.get("zone").replace("ZONE_", "")))
+
+    for i in num_zone:  # zone loop
         binary_sensors.extend([
         AiraBinarySensor(coordinator, entry,
             name=f"Zone {i} Circulator",

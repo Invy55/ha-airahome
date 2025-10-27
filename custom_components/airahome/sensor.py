@@ -220,6 +220,44 @@ async def async_setup_entry(
             icon="mdi:lightning-bolt",
             enabled_by_default=False
         ),
+        AiraPowerSensor(coordinator, entry,
+            name="DHW Instant Power Consumption (kW)",
+            unique_id_suffix="dhw_instant_power_kw",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            unit_of_measurement=UnitOfPower.KILO_WATT,
+            original_unit=UnitOfPower.WATT,
+            icon="mdi:lightning-bolt",
+            allowed_status=["PUMP_ACTIVE_STATE_DHW", "PUMP_ACTIVE_STATE_ANTI_LEGIONELLA"]
+        ),
+        AiraPowerSensor(coordinator, entry,
+            name="DHW Instant Power Consumption (W)",
+            unique_id_suffix="dhw_instant_power_w",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            unit_of_measurement=UnitOfPower.WATT,
+            original_unit=UnitOfPower.WATT,
+            icon="mdi:lightning-bolt",
+            allowed_status=["PUMP_ACTIVE_STATE_DHW", "PUMP_ACTIVE_STATE_ANTI_LEGIONELLA"],
+            enabled_by_default=False
+        ),
+        AiraPowerSensor(coordinator, entry,
+            name="H/C Instant Power Consumption (kW)",
+            unique_id_suffix="hc_instant_power_kw",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            unit_of_measurement=UnitOfPower.KILO_WATT,
+            original_unit=UnitOfPower.WATT,
+            icon="mdi:lightning-bolt",
+            allowed_status=["PUMP_ACTIVE_STATE_HEATING", "PUMP_ACTIVE_STATE_COOLING", "PUMP_ACTIVE_STATE_DEFROSTING"]
+        ),
+        AiraPowerSensor(coordinator, entry,
+            name="H/C Instant Power Consumption (W)",
+            unique_id_suffix="hc_instant_power_w",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            unit_of_measurement=UnitOfPower.WATT,
+            original_unit=UnitOfPower.WATT,
+            icon="mdi:lightning-bolt",
+            allowed_status=["PUMP_ACTIVE_STATE_HEATING", "PUMP_ACTIVE_STATE_COOLING", "PUMP_ACTIVE_STATE_DEFROSTING"],
+            enabled_by_default=False
+        ),
         AiraInstantHeatSensor(coordinator, entry,
             unit_of_measurement=UnitOfPower.KILO_WATT
         ),
@@ -303,7 +341,12 @@ async def async_setup_entry(
     ]
 
     # PER ZONE LOOP
-    for i in range(1, coordinator.data.get("state", {}).get("number_of_zones", 2) + 1):  # Zones 1 and 2, falls back to 2
+    num_zone = set()
+    for thermostat in coordinator.data.get("state", {}).get("thermostats", []):
+        if thermostat.get("serial_number") and thermostat.get("zone"):
+            num_zone.add(int(thermostat.get("zone").replace("ZONE_", "")))
+
+    for i in num_zone:  # zone loop
         sensors.extend([
         AiraTemperatureSensor(coordinator, entry,
             name=f"Zone {i} Supply Temperature",
@@ -772,6 +815,7 @@ class AiraPowerSensor(AiraSensorBase):
         unit_of_measurement: str = UnitOfPower.KILO_WATT,
         original_unit: str = UnitOfPower.WATT,
         enabled_by_default: bool = True,
+        allowed_status: list[str] | None = None
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
@@ -781,6 +825,7 @@ class AiraPowerSensor(AiraSensorBase):
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
+        self._allowed_status = allowed_status
 
     @property
     def native_value(self) -> float | None:
@@ -788,6 +833,9 @@ class AiraPowerSensor(AiraSensorBase):
             return None
 
         if self._data_path:
+            if self._allowed_status and self.coordinator.data.get("state", {}).get("pump_active_state") not in self._allowed_status:
+                return 0.0  # Return 0 if not in allowed operating status
+            
             value = self.coordinator.data
             try:
                 for path in self._data_path:
