@@ -211,10 +211,11 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         return stale_result
                 
                 # Not connected and no fresh stale data - keep existing coordinator state
-                _LOGGER.warning("Not connected and no stale data available - maintaining last coordinator state")
+                _LOGGER.warning("Not connected and no stale data made available.")
                 if self.data and len(self.data.keys()) > 0:
-                    # Return existing coordinator data but mark as disconnected
-                    result = self.data.copy()
+                    # Return  disconnected, do not keep old data to avoid prolonged stale readings
+                    #result = self.data.copy()
+                    result = {}
                     result["connected"] = False
                     result["rssi"] = rssi if rssi else None
                     return result
@@ -263,11 +264,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         stale_result["rssi"] = rssi if rssi else None
                         return stale_result
                 
-                # No fresh stale data - keep existing coordinator state to prevent sensors going unavailable
-                _LOGGER.warning("Connection lost, retry failed, and no stale data available - maintaining last coordinator state")
+                # No fresh stale data, sensors will go unavailable but it's better than prolonged stale readings
+                _LOGGER.warning("Connection lost, retry failed, and no stale data available")
                 if self.data and self.data.get("state"):
-                    # Return existing coordinator data but mark as disconnected
-                    result = self.data.copy()
+                    # Return disconnected
+                    #result = self.data.copy()
+                    result = {}
                     result["connected"] = False
                     result["rssi"] = None
                     return result
@@ -332,11 +334,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                             stale_result["rssi"] = rssi if rssi else None
                             return stale_result
                     
-                    # No fresh stale data - keep existing coordinator state to prevent sensors going unavailable
-                    _LOGGER.warning("GATT error, retry failed, and no stale data available - maintaining last coordinator state")
+                    # No fresh stale data
+                    _LOGGER.warning("GATT error, retry failed, and no stale data available")
                     if self.data and self.data.get("state"):
-                        # Return existing coordinator data but mark as disconnected
-                        result = self.data.copy()
+                        # Return disconnected
+                        #result = self.data.copy()
+                        result = {}
                         result["connected"] = False
                         result["rssi"] = None
                         return result
@@ -363,11 +366,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         stale_result["rssi"] = rssi if rssi else None
                         return stale_result
                 
-                # No fresh stale data - keep existing coordinator state to prevent sensors going unavailable
+                # No fresh stale data
                 _LOGGER.warning("Data fetch failed and no stale data available - maintaining last coordinator state")
                 if self.data and self.data.get("state"):
-                    # Return existing coordinator data but mark as disconnected
-                    result = self.data.copy()
+                    # Return disconnected
+                    #result = self.data.copy()
+                    result = {}
                     result["connected"] = False
                     result["rssi"] = None
                     return result
@@ -396,11 +400,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                     stale_result["rssi"] = None
                     return stale_result
             
-            # No fresh stale data - keep existing coordinator state to prevent sensors going unavailable
-            _LOGGER.warning("Coordinator error and no stale data available - maintaining last coordinator state")
+            # No fresh stale data
+            _LOGGER.warning("Coordinator error and no stale data available")
             if self.data and self.data.get("state"):
-                # Return existing coordinator data but mark as disconnected
-                result = self.data.copy()
+                # Return disconnected
+                #result = self.data.copy()
+                result = {}
                 result["connected"] = False
                 result["rssi"] = None
                 return result

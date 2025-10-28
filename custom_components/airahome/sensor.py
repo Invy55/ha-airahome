@@ -351,7 +351,7 @@ async def async_setup_entry(
         AiraTemperatureSensor(coordinator, entry,
             name=f"Zone {i} Supply Temperature",
             unique_id_suffix=f"zone_{i}_supply_temp",
-            data_path=("system_check", "sensor_values", "indoor_unit_supply_temperature"),
+            data_path=("system_check", "sensor_values", f"indoor_unit_supply_temperature_zone{i}"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
@@ -382,6 +382,13 @@ async def async_setup_entry(
             data_path=("state", "current_pump_mode_state", f"zone{i}"),
             replace="PUMP_MODE_STATE_",
             icon="mdi:heat-pump-outline"
+        ),
+        AiraPercentageSensor(coordinator, entry,
+            name=f"Zone {i} Valve Position",
+            unique_id_suffix=f"zone_{i}_valve_position",
+            data_path=("system_check", "valve_status", f"mixing_valve{i}_calculated_position"),
+            icon="mdi:valve",
+            enabled_by_default=False
         )
         # TODO ADD SETPOINTS
 

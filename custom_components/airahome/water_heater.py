@@ -47,7 +47,7 @@ async def async_setup_entry(
         AiraWaterHeater(coordinator, entry, aira),
     ]
     
-    async_add_entities(water_heaters, False)
+    async_add_entities(water_heaters, True)
 
 
 # ============================================================================
