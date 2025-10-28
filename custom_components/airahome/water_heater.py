@@ -1,7 +1,6 @@
 """Water heater platform for Aira Heat Pump."""
 from __future__ import annotations
 
-from functools import partial
 import logging
 from typing import Any
 

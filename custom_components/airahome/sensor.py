@@ -444,8 +444,7 @@ async def async_setup_entry(
     else:
         _LOGGER.warning("Coordinator data is empty - this will cause sensor issues")
     
-    
-    async_add_entities(sensors, False)
+    async_add_entities(sensors, True)
 
 # ============================================================================
 # BASE SENSOR CLASS

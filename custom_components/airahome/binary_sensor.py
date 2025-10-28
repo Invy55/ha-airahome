@@ -110,7 +110,7 @@ async def async_setup_entry(
         )
         ])
 
-    async_add_entities(binary_sensors)
+    async_add_entities(binary_sensors, True)
 
 # ============================================================================
 # BINARY SENSORS
