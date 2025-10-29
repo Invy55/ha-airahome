@@ -21,11 +21,12 @@ from homeassistant.components.water_heater.const import (
     STATE_PERFORMANCE,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers import translation
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, DEFAULT_SHORT_NAME, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
 
 from pyairahome.commands import SetTargetHotWaterTemperature
@@ -88,12 +89,13 @@ class AiraWaterHeater(WaterHeaterEntity):
         self._attr_unique_id = f"{self._device_uuid}_water_heater"
         self.aira = aira
 
-        self._attr_device_info = {
+        self._attr_device_info = DeviceInfo(**{
             "identifiers": {(DOMAIN, self._device_uuid)},
+            "connections": {(dr.CONNECTION_BLUETOOTH, entry.data.get(CONF_MAC_ADDRESS))},
             "name": entry.data.get(CONF_DEVICE_NAME, DEFAULT_SHORT_NAME),
             "manufacturer": "Aira",
             "model": "Heat Pump",
-        }
+        })
 
     async def _get_translation(self, key: str, fallback: str = "", **format_args) -> str:
         """Get a localized translation for the given key."""

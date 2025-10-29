@@ -25,11 +25,12 @@ from homeassistant.const import (
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, DEFAULT_SHORT_NAME, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -471,12 +472,13 @@ class AiraSensorBase(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._device_uuid = entry.data[CONF_DEVICE_UUID]
         
-        self._attr_device_info = {
+        self._attr_device_info = DeviceInfo(**{
             "identifiers": {(DOMAIN, self._device_uuid)},
+            "connections": {(dr.CONNECTION_BLUETOOTH, entry.data.get(CONF_MAC_ADDRESS))},
             "name": entry.data.get(CONF_DEVICE_NAME, DEFAULT_SHORT_NAME),
             "manufacturer": "Aira",
             "model": "Heat Pump",
-        }
+        })
 
     # TODO check if AVAIABLE property is needed
 
