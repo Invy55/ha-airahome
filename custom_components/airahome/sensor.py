@@ -917,7 +917,7 @@ class AiraEnergySensor(AiraSensorBase):
 class AiraInstantHeatSensor(AiraSensorBase):
     """Thermal power output sensor. Calculated using https://docs.openenergymonitor.org/heatpumps/basics.html#mass-flow-rate-heat-transfer"""
 
-    _attr_name = "Instant Heat Production"
+
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
@@ -932,6 +932,7 @@ class AiraInstantHeatSensor(AiraSensorBase):
             ) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator, entry)
+        self._attr_name = f"Instant Heat Production ({unit_of_measurement.lower().replace('w', 'W')})"
         self._attr_unique_id = f"{self._device_uuid}_instant_heat_{unit_of_measurement.lower()}"
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._attr_entity_registry_enabled_default = enabled_by_default
