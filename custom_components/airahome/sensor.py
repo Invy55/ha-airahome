@@ -172,7 +172,7 @@ async def async_setup_entry(
             enabled_by_default=False
         ),
         # Compressor
-        AiraRotationSpeedSensor(coordinator, entry,
+        AiraFrequencySensor(coordinator, entry,
             name="OU Compressor Speed",
             unique_id_suffix="ou_compressor_speed",
             data_path=("system_check", "megmet_status", "compressor_running_speed"),
