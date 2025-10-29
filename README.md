@@ -33,62 +33,13 @@
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
 ### 🔵 Installation via HACS (Custom Repository)
+**METHOD 1:**
 
-1. Open HACS → **Integrations**
+Click on the button below to install it directly:
 
-2. Click on `⋮` (top right menu) → **Custom Repositories**
+[![hacs](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=invy55&repository=ha-airahome&category=integration)
 
-3. Enter the repository URL:
-
-   ```
-   https://github.com/Invy55/Ha-AiraHome
-   ```
-
-   Type: **Integration**
-
-4. Confirm → The integration is now in HACS 
-
-5. Find the integration in HACS → Click **Install**
-
-6. Restart Home Assistant
-
-   ```
-   Settings → System → Restart
-   ```
-
-7. Add the integration:
-
-   ```
-   Settings → Devices & Services → ＋Add Integration → AiraHome
-   ```
-
-8. Follow the setup instructions in the UI
-
-### 🔵 Installation Manually
-
-1. Download the integration from GitHub Releases:
-
-   [➡️ Ha-AiraHome Releases](https://github.com/Invy55/Ha-AiraHome/releases)
-
-2. Copy the downloaded `airahome` folder to:
-
-   ```
-   /config/custom_components/airahome
-   ```
-
-3. Restart Home Assistant
-
-   ```
-   Settings → System → Restart
-   ```
-
-4. Add the integration:
-
-   ```
-   Settings → Devices & Services → ＋Add Integration → AiraHome
-   ```
-
-5. Follow the setup instructions in the UI
+For more installation methods check [the wiki here](https://github.com/Invy55/ha-airahome/wiki/Installation)!
 
 ## 📋 Todo(s) <a name = "todo"></a>
 
