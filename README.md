@@ -39,6 +39,10 @@ Click on the button below to install it directly:
 
 [![hacs](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=invy55&repository=ha-airahome&category=integration)
 
+Done! Now simply add an integration, you can do that from ha or by clicking here:
+
+[![hacs](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=airahome)
+
 For more installation methods check [the wiki here](https://github.com/Invy55/ha-airahome/wiki/Installation)!
 
 ## 📋 Todo(s) <a name = "todo"></a>
