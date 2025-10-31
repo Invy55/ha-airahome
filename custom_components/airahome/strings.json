@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect to Aira Cloud",
-        "description": "Enter your Aira account credentials to list your avaiable devices",
+        "description": "Enter your Aira account credentials to list your available devices",
         "data": {
           "email": "Email",
           "password": "Password"
