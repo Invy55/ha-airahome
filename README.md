@@ -25,6 +25,8 @@
 - [About](#about)
 - [Getting Started](#getting_started)
 - [TODO](#todo)
+- [Community](#community)
+- [Support Me](#supportme)
 - [Disclaimer](#disclaimer)
 
 ## 🧐 About <a name = "about"></a>
@@ -52,6 +54,13 @@ For more installation methods check [the wiki here](https://github.com/Invy55/ha
 
 Suggestions and contributions are welcome! Feel free to open an issue or pull request with your ideas.
 
+## 🌐 Community <a name = "community"></a>
+If you enjoy this project and want to **connect with other users**, we'd love to see you in our community. Come and join us at [airausersforum.com](https://airausersforum.com)!
+
+## ☕ Support me <a name = "supportme"></a>
+I created and currently mantain this project because I genuinely enjoy doing so. No need to tip — but if you’d still like to show some appreciation you can do it by clicking on the button below, thank you!
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y8Y01NUQV3)
 
 ## ⚠️ Disclaimer <a name = "disclaimer"></a>
 
