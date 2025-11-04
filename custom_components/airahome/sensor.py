@@ -390,7 +390,14 @@ async def async_setup_entry(
             data_path=("system_check", "valve_status", f"mixing_valve{i}_calculated_position"),
             icon="mdi:valve",
             enabled_by_default=False
-        )
+        ),
+        AiraHeatCurveSensor(coordinator, entry,
+            name=f"Zone {i} Heat Curve",
+            unique_id_suffix=f"zone_{i}_heat_curve",
+            data_path=("state", "heat_curves", f"zone{i}"),
+            outdoor_temp_path=("state", "current_outdoor_temperature")
+        ),
+
         # TODO ADD SETPOINTS
 
         ])
@@ -1414,4 +1421,103 @@ class AiraDeviceCOPSensor(AiraSensorBase):
         # Filter out edge case values > 8 as they are artifacts according to emoncms.org
         if cop_now and cop_now > 0 and cop_now <= 8: 
             return round(cop_now, 2)
+        return None
+
+class AiraHeatCurveSensor(AiraSensorBase):
+    """Heat curve sensor."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:chart-line"  
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_suggested_display_precision = 2
+
+    def __init__(
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+        name: str,
+        unique_id_suffix: str,
+        data_path: tuple[str, ...],
+        outdoor_temp_path: tuple[str, ...] | None = None,
+        enabled_by_default: bool = False,
+        index: int | str | None = None,
+    ) -> None:
+        """Initialise the sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_name = name        
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        self._data_path = data_path
+        self._outdoor_temp_path = outdoor_temp_path
+        self._ambient: list[float] = []
+        self._supply: list[float] = []
+        # if string: ZONE_1 or ZONE_2
+        # if int: 1 or 2
+        self._index = index
+        self._attr_entity_registry_enabled_default = enabled_by_default
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the state."""
+        
+        if not self.coordinator.data:
+            return None
+        
+        if self._data_path:
+            value = self.coordinator.data
+
+            try:
+                # get the outdoor temperature
+                for path in self._outdoor_temp_path:
+                    value = value[path]
+
+                outdoor_temp = float(value)
+
+                # get the heat curve points
+                ambient = self._ambient
+                supply = self._supply
+
+                try:
+                    # interpolate the supply temperature based on outdoor temperature
+                    i = 0
+                    for j in range(len(ambient)):
+                        if ambient[j] > outdoor_temp:
+                            u = (outdoor_temp - ambient[i]) / (ambient[j] - ambient[i])
+                            supply_temp = supply[i] + u * (supply[j] - supply[i])
+                            return supply_temp
+                        i = j
+                except Exception:
+                    return None
+            except (KeyError, ValueError, TypeError):
+                return None
+            
+        return None
+        
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional attributes."""
+
+        if not self.coordinator.data:
+            return None
+        
+        if self._data_path:
+            value = self.coordinator.data
+
+            try:
+                for path in self._data_path:
+                    value = value[path]
+
+                # extract ambient and supply into two separate lists
+                # for easier plotting in the frontend
+                self._ambient = []
+                self._supply = []
+                for i in range(len(value)):
+                    point = value[f'p{i+1}']
+                    self._ambient.append(point['ambient'])
+                    self._supply.append(point['supply'])
+        
+                return { "ambient": self._ambient, "supply": self._supply }
+            except (KeyError, ValueError, TypeError):
+                return None
+
         return None
