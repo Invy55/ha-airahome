@@ -1464,9 +1464,6 @@ class AiraCurveSensor(AiraSensorBase):
         self._zone = zone
         self._heating = heating
 
-        self._last_value = {}
-        self._last_date = None
-
         if self._heating:
             self._curve_key = f"heat_curves"
         else:
