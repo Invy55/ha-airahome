@@ -398,12 +398,6 @@ async def async_setup_entry(
             icon="mdi:valve",
             enabled_by_default=False
         ),
-        AiraHeatCurveSensor(coordinator, entry,
-            name=f"Zone {i} Heat Curve",
-            unique_id_suffix=f"zone_{i}_heat_curve",
-            data_path=("state", "heat_curves", f"zone{i}"),
-            outdoor_temp_path=("state", "current_outdoor_temperature")
-        ),
         AiraTemperatureSensor(coordinator, entry,
             name=f"Zone {i} Calculated Supply Temperature",
             unique_id_suffix=f"zone_{i}_calculated_supply_temp",
@@ -424,6 +418,10 @@ async def async_setup_entry(
                 unique_id_suffix=f"zone_{i}_heat_target",
                 data_path=("state", "zone_setpoints_heating", f"zone{i}"),
                 icon="mdi:sun-thermometer",
+            ),
+            AiraCurveSensor(coordinator, entry,
+                zone=i,
+                heating=True        
             )
             ])
         if "cooling" in allowed_pump_mode_state:
@@ -433,6 +431,10 @@ async def async_setup_entry(
                 unique_id_suffix=f"zone_{i}_cool_target",
                 data_path=("state", "zone_setpoints_cooling", f"zone{i}"),
                 icon="mdi:snowflake-thermometer",
+            ),
+            AiraCurveSensor(coordinator, entry,
+                zone=i,
+                heating=False        
             )
             ])
 
@@ -1436,8 +1438,12 @@ class AiraDeviceCOPSensor(AiraSensorBase):
             return round(cop_now, 2)
         return None
 
-class AiraHeatCurveSensor(AiraSensorBase):
-    """Heat curve sensor."""
+# ============================================================================
+# CURVE SENSOR
+# ============================================================================
+
+class AiraCurveSensor(AiraSensorBase):
+    """Heating/Cooling Curve sensor."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -1446,98 +1452,74 @@ class AiraHeatCurveSensor(AiraSensorBase):
     _attr_suggested_display_precision = 2
 
     def __init__(
-        self,
-        coordinator: AiraDataUpdateCoordinator,
-        entry: ConfigEntry,
-        name: str,
-        unique_id_suffix: str,
-        data_path: tuple[str, ...],
-        outdoor_temp_path: tuple[str, ...] | None = None,
-        enabled_by_default: bool = False,
-        index: int | str | None = None,
+            self,
+            coordinator: AiraDataUpdateCoordinator,
+            entry: ConfigEntry,
+            zone: int,
+            heating: bool = True
     ) -> None:
-        """Initialise the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_name = name        
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
-        self._data_path = data_path
-        self._outdoor_temp_path = outdoor_temp_path
-        self._ambient: list[float] = []
-        self._supply: list[float] = []
-        # if string: ZONE_1 or ZONE_2
-        # if int: 1 or 2
-        self._index = index
-        self._attr_entity_registry_enabled_default = enabled_by_default
+        self._attr_name = f"{'Heating' if heating else 'Cooling'} Curve Zone {zone}"
+        self._attr_unique_id = f"{self._device_uuid}_curve_zone_{zone}"
+        self._zone = zone
+        self._heating = heating
+
+        self._last_value = {}
+        self._last_date = None
+
+        if self._heating:
+            self._curve_key = f"heat_curves"
+        else:
+            self._curve_key = f"cool_curves"
 
     @property
     def native_value(self) -> float | None:
         """Return the state."""
-        
         if not self.coordinator.data:
             return None
         
-        if self._data_path:
-            value = self.coordinator.data
+        try:
+            outdoor_temp = float(self.coordinator.data["state"]["current_outdoor_temperature"])
+
+            # get the heat curve points
+            ambient = self.extra_state_attributes["ambient"]
+            supply = self.extra_state_attributes["supply"]
 
             try:
-                # get the outdoor temperature
-                for path in self._outdoor_temp_path:
-                    value = value[path]
-
-                outdoor_temp = float(value)
-
-                # get the heat curve points
-                ambient = self._ambient
-                supply = self._supply
-
-                try:
-                    # if temperature is lower than lowest ambient, clamp to lowest supply
-                    if outdoor_temp <= ambient[0]:
-                        return supply[0]
-            
-                    # interpolate the supply temperature based on outdoor temperature
-                    i = 0
-                    for j in range(len(ambient)):
-                        if ambient[j] > outdoor_temp:
-                            u = (outdoor_temp - ambient[i]) / (ambient[j] - ambient[i])
-                            supply_temp = supply[i] + u * (supply[j] - supply[i])
-                            return supply_temp
-                        i = j
-
-                    # if temperature is higher than highest ambient, clamp to highest supply
+                # if temperature is lower than lowest ambient, clamp to lowest supply
+                if outdoor_temp <= ambient[0]:
+                    return supply[0]
+                
+                # if temperature is higher than highest ambient, clamp to highest supply
+                if outdoor_temp >= ambient[-1]:
                     return supply[-1]
-                except Exception:
-                    return None
-            except (KeyError, ValueError, TypeError):
+        
+                # interpolate the supply temperature based on outdoor temperature
+                for i in range(len(ambient) - 1):
+                    if ambient[i] <= outdoor_temp < ambient[i + 1]:
+                        u = (outdoor_temp - ambient[i]) / (ambient[i + 1] - ambient[i])
+                        return round(supply[i] + u * (supply[i + 1] - supply[i]), 2)
+            except Exception:
                 return None
-            
-        return None
+        except (KeyError, ValueError, TypeError):
+            return None
         
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional attributes."""
-
+        """Return the state attributes."""
         if not self.coordinator.data:
-            return None
-        
-        if self._data_path:
-            value = self.coordinator.data
+            return {"ambient": [], "supply": []}
+    
+        try:
+            curves = self.coordinator.data["state"][self._curve_key][f"zone{self._zone}"]
+            output = {
+                "ambient": [],
+                "supply": []
+            }
+            for p in curves.keys():
+                for t in ["ambient", "supply"]:
+                    output[t].append(curves[p][t])
 
-            try:
-                for path in self._data_path:
-                    value = value[path]
-
-                # extract ambient and supply into two separate lists
-                # for easier plotting in the frontend
-                self._ambient = []
-                self._supply = []
-                for i in range(len(value)):
-                    point = value[f'p{i+1}']
-                    self._ambient.append(point['ambient'])
-                    self._supply.append(point['supply'])
-        
-                return { "ambient": self._ambient, "supply": self._supply }
-            except (KeyError, ValueError, TypeError):
-                return None
-
-        return None
+            return output
+        except (KeyError, ValueError, TypeError):
+            return {"ambient": [], "supply": []}
