@@ -71,6 +71,13 @@ async def async_setup_entry(
             data_path=("system_check", "sensor_values", "indoor_unit_supply_temperature"),
             icon="mdi:thermometer-water"
         ),
+        AiraTemperatureSensor(coordinator, entry,
+            name="Calculated Supply Temperature",
+            unique_id_suffix="calculated_supply_temp",
+            data_path=("system_check", "calculated_setpoints", "supply"),
+            icon="mdi:thermometer-water",
+            enabled_by_default=False
+        ),
         # === OUTDOOR UNIT SENSORS ===
         # Temperatures
         AiraTemperatureSensor(coordinator, entry,
@@ -390,7 +397,14 @@ async def async_setup_entry(
             data_path=("system_check", "valve_status", f"mixing_valve{i}_calculated_position"),
             icon="mdi:valve",
             enabled_by_default=False
-        )
+        ),
+        AiraTemperatureSensor(coordinator, entry,
+            name=f"Zone {i} Calculated Supply Temperature",
+            unique_id_suffix=f"zone_{i}_calculated_supply_temp",
+            data_path=("system_check", "calculated_setpoints", f"supply_zone{i}"),
+            icon="mdi:thermometer-water",
+            enabled_by_default=False
+        ),
         # TODO ADD SETPOINTS
 
         ])
