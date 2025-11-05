@@ -404,7 +404,6 @@ async def async_setup_entry(
             data_path=("state", "heat_curves", f"zone{i}"),
             outdoor_temp_path=("state", "current_outdoor_temperature")
         ),
-
         AiraTemperatureSensor(coordinator, entry,
             name=f"Zone {i} Calculated Supply Temperature",
             unique_id_suffix=f"zone_{i}_calculated_supply_temp",
