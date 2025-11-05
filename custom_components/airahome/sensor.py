@@ -1478,6 +1478,10 @@ class AiraHeatCurveSensor(AiraSensorBase):
                 supply = self._supply
 
                 try:
+                    # if temperature is lower than lowest ambient, clamp to lowest supply
+                    if outdoor_temp <= ambient[0]:
+                        return supply[0]
+            
                     # interpolate the supply temperature based on outdoor temperature
                     i = 0
                     for j in range(len(ambient)):
@@ -1486,6 +1490,9 @@ class AiraHeatCurveSensor(AiraSensorBase):
                             supply_temp = supply[i] + u * (supply[j] - supply[i])
                             return supply_temp
                         i = j
+
+                    # if temperature is higher than highest ambient, clamp to highest supply
+                    return supply[-1]
                 except Exception:
                     return None
             except (KeyError, ValueError, TypeError):
