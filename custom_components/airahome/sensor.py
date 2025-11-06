@@ -1459,8 +1459,8 @@ class AiraCurveSensor(AiraSensorBase):
             heating: bool = True
     ) -> None:
         super().__init__(coordinator, entry)
-        self._attr_name = f"{'Heating' if heating else 'Cooling'} Curve Zone {zone}"
-        self._attr_unique_id = f"{self._device_uuid}_curve_zone_{zone}"
+        self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
+        self._attr_unique_id = f"{self._device_uuid}_zone_{zone}_{'heating' if heating else 'cooling'}_curve"
         self._zone = zone
         self._heating = heating
 
