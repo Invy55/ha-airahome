@@ -418,6 +418,10 @@ async def async_setup_entry(
                 unique_id_suffix=f"zone_{i}_heat_target",
                 data_path=("state", "zone_setpoints_heating", f"zone{i}"),
                 icon="mdi:sun-thermometer",
+            ),
+            AiraCurveSensor(coordinator, entry,
+                zone=i,
+                heating=True        
             )
             ])
         if "cooling" in allowed_pump_mode_state:
@@ -427,6 +431,10 @@ async def async_setup_entry(
                 unique_id_suffix=f"zone_{i}_cool_target",
                 data_path=("state", "zone_setpoints_cooling", f"zone{i}"),
                 icon="mdi:snowflake-thermometer",
+            ),
+            AiraCurveSensor(coordinator, entry,
+                zone=i,
+                heating=False        
             )
             ])
 
@@ -1429,3 +1437,86 @@ class AiraDeviceCOPSensor(AiraSensorBase):
         if cop_now and cop_now > 0 and cop_now <= 8: 
             return round(cop_now, 2)
         return None
+
+# ============================================================================
+# CURVE SENSOR
+# ============================================================================
+
+class AiraCurveSensor(AiraSensorBase):
+    """Heating/Cooling Curve sensor."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:chart-line"  
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_suggested_display_precision = 2
+
+    def __init__(
+            self,
+            coordinator: AiraDataUpdateCoordinator,
+            entry: ConfigEntry,
+            zone: int,
+            heating: bool = True
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
+        self._attr_unique_id = f"{self._device_uuid}_zone_{zone}_{'heating' if heating else 'cooling'}_curve"
+        self._zone = zone
+        self._heating = heating
+
+        if self._heating:
+            self._curve_key = f"heat_curves"
+        else:
+            self._curve_key = f"cool_curves"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the state."""
+        if not self.coordinator.data:
+            return None
+        
+        try:
+            outdoor_temp = float(self.coordinator.data["state"]["current_outdoor_temperature"])
+
+            # get the heat curve points
+            ambient = self.extra_state_attributes["ambient"]
+            supply = self.extra_state_attributes["supply"]
+
+            try:
+                # if temperature is lower than lowest ambient, clamp to lowest supply
+                if outdoor_temp <= ambient[0]:
+                    return supply[0]
+                
+                # if temperature is higher than highest ambient, clamp to highest supply
+                if outdoor_temp >= ambient[-1]:
+                    return supply[-1]
+        
+                # interpolate the supply temperature based on outdoor temperature
+                for i in range(len(ambient) - 1):
+                    if ambient[i] <= outdoor_temp < ambient[i + 1]:
+                        u = (outdoor_temp - ambient[i]) / (ambient[i + 1] - ambient[i])
+                        return round(supply[i] + u * (supply[i + 1] - supply[i]), 2)
+            except Exception:
+                return None
+        except (KeyError, ValueError, TypeError):
+            return None
+        
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the state attributes."""
+        if not self.coordinator.data:
+            return {"ambient": [], "supply": []}
+    
+        try:
+            curves = self.coordinator.data["state"][self._curve_key][f"zone{self._zone}"]
+            output = {
+                "ambient": [],
+                "supply": []
+            }
+            for p in curves.keys():
+                for t in ["ambient", "supply"]:
+                    output[t].append(curves[p][t])
+
+            return output
+        except (KeyError, ValueError, TypeError):
+            return {"ambient": [], "supply": []}
