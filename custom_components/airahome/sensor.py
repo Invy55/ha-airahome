@@ -1321,6 +1321,10 @@ class AiraLEDPatternSensor(AiraSensorBase):
     @property
     def icon(self) -> str:
         """Return the icon based on LED pattern."""
+        if not self.native_value:
+            _LOGGER.debug("LED pattern sensor native_value is None")
+            return "mdi:lightbulb-question"
+        
         pattern = self.native_value.upper()
         if pattern is None:
             return "mdi:lightbulb-off"
