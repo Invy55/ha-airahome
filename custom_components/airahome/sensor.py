@@ -1086,8 +1086,12 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
     @property
     def native_value(self) -> int | None:
         """Return the state."""
-        energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
-        return energy_balance.get("energy_balance")
+        try:
+            energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
+            return energy_balance.get("energy_balance")
+        except Exception as err:
+            _LOGGER.debug("Error getting energy_balance %s", err)
+            return None
 
 # ============================================================================
 # FLOW SENSORS
@@ -1315,8 +1319,12 @@ class AiraLEDPatternSensor(AiraSensorBase):
     @property
     def native_value(self) -> str | None:
         """Return the state."""
-        pattern = self.coordinator.data["state"].get("led_pattern", "")
-        return pattern.replace("LED_PATTERN_", "").replace("_", " ").title()
+        try:
+            pattern = self.coordinator.data["state"].get("led_pattern", "")
+            return pattern.replace("LED_PATTERN_", "").replace("_", " ").title()
+        except Exception as err:
+            _LOGGER.debug("Error getting led_pattern %s", err)
+            return None
 
     @property
     def icon(self) -> str:
@@ -1431,13 +1439,17 @@ class AiraDeviceCOPSensor(AiraSensorBase):
     @property
     def native_value(self) -> float | None:
         """Return the state."""
-        energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
-        cop_now = energy_calc.get("cop_now")
-        # Only return non-zero values (0 means pump is idle/not operating)
-        # Filter out edge case values > 8 as they are artifacts according to emoncms.org
-        if cop_now and cop_now > 0 and cop_now <= 8: 
-            return round(cop_now, 2)
-        return None
+        try:
+            energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
+            cop_now = energy_calc.get("cop_now")
+            # Only return non-zero values (0 means pump is idle/not operating)
+            # Filter out edge case values > 8 as they are artifacts according to emoncms.org
+            if cop_now and cop_now > 0 and cop_now <= 8: 
+                return round(cop_now, 2)
+            return None
+        except Exception as err:
+            _LOGGER.debug("Error getting energy_calculation %s", err)
+            return None
 
 # ============================================================================
 # CURVE SENSOR
