@@ -62,7 +62,8 @@ async def async_setup_entry(
         AiraTemperatureSensor(coordinator, entry,
             name="Outdoor Temperature",
             unique_id_suffix="outdoor_temp",
-            data_path=("state", "current_outdoor_temperature"),
+            data_path=("system_check", "sensor_values", "outdoor_unit_ambient_temperature"),
+            # TODO change every ("state", "current_outdoor_temperature") occurence to the better one if it is confirmed to be reliable
             icon="mdi:thermometer"
         ),
         AiraTemperatureSensor(coordinator, entry,
