@@ -299,6 +299,7 @@ async def async_setup_entry(
             icon="mdi:fire",
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
+            state_class=SensorStateClass.TOTAL
         ),
         AiraEnergySensor(coordinator, entry,
             name="Total Heat Produced (Wh)",
@@ -307,7 +308,8 @@ async def async_setup_entry(
             icon="mdi:fire",
             unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
-            enabled_by_default=False
+            enabled_by_default=False,
+            state_class=SensorStateClass.TOTAL
         ),
         AiraEnergyBalanceSensor(coordinator, entry),
         # === COP SENSORS ===
@@ -890,7 +892,6 @@ class AiraEnergySensor(AiraSensorBase):
     """Base class for all energy sensors."""
 
     _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_suggested_display_precision = 3
 
     def __init__(
@@ -904,6 +905,7 @@ class AiraEnergySensor(AiraSensorBase):
         unit_of_measurement: str = UnitOfEnergy.KILO_WATT_HOUR,
         original_unit: str = UnitOfEnergy.WATT_HOUR,
         enabled_by_default: bool = True,
+        state_class=SensorStateClass.TOTAL_INCREASING
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
@@ -913,6 +915,7 @@ class AiraEnergySensor(AiraSensorBase):
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
         self._attr_entity_registry_enabled_default = enabled_by_default
+        self._attr_state_class = state_class
 
     @property
     def native_value(self) -> float | None:
