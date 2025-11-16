@@ -220,11 +220,7 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         """Return true if there are active alarms."""
         state = self.coordinator.data.get("state", {})
         error_meta = state.get("error_metadata", {})
-        return bool(
-            error_meta.get("hp_has_stopping_alarms")
-            or error_meta.get("hp_has_acknowledgeable_alarms")
-            or error_meta.get("compressor_has_stopping_alarm")
-        )
+        return any(error_meta.keys())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -232,10 +228,11 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         state = self.coordinator.data.get("state", {})
         error_meta = state.get("error_metadata", {})
         errors = state.get("errors", [])
-        
+
         attributes = {
             "stopping_alarms": "🚨" if error_meta.get("hp_has_stopping_alarms", False) else "🟢",
             "acknowledgeable_alarms": "🚨" if error_meta.get("hp_has_acknowledgeable_alarms", False) else "🟢",
+            "generic_alarms": "🚨" if error_meta.get("hp_has_some_alarm", False) else "🟢",
             "compressor_alarms": "🚨" if error_meta.get("compressor_has_stopping_alarm", False) else "🟢",
             "error_count": len(errors),
         }
