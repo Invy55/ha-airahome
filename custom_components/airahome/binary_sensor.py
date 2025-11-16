@@ -220,7 +220,7 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         """Return true if there are active alarms."""
         state = self.coordinator.data.get("state", {})
         error_meta = state.get("error_metadata", {})
-        return any(error_meta.keys())
+        return any(error_meta.values())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
