@@ -63,7 +63,6 @@ async def async_setup_entry(
             name="Outdoor Temperature",
             unique_id_suffix="outdoor_temp",
             data_path=("system_check", "sensor_values", "outdoor_unit_ambient_temperature"),
-            # TODO change every ("state", "current_outdoor_temperature") occurence to the better one if it is confirmed to be reliable
             icon="mdi:thermometer"
         ),
         AiraTemperatureSensor(coordinator, entry,
@@ -405,9 +404,7 @@ async def async_setup_entry(
             data_path=("system_check", "calculated_setpoints", f"supply_zone{i}"),
             icon="mdi:thermometer-water",
             enabled_by_default=False
-        ),
-        # TODO ADD SETPOINTS
-
+        )
         ])
 
         # check configured modes on the heatpump to enable heating/cooling targets accordingly
@@ -1089,9 +1086,8 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
         try:
             energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
             return energy_balance.get("energy_balance")
-        except Exception as err:
-            _LOGGER.debug("Error getting energy_balance %s", err)
-            return None
+        except (KeyError, ValueError, TypeError):
+                return None
 
 # ============================================================================
 # FLOW SENSORS
@@ -1322,9 +1318,8 @@ class AiraLEDPatternSensor(AiraSensorBase):
         try:
             pattern = self.coordinator.data["state"].get("led_pattern", "")
             return pattern.replace("LED_PATTERN_", "").replace("_", " ").title()
-        except Exception as err:
-            _LOGGER.debug("Error getting led_pattern %s", err)
-            return None
+        except (KeyError, ValueError, TypeError):
+                return None
 
     @property
     def icon(self) -> str:
@@ -1447,9 +1442,8 @@ class AiraDeviceCOPSensor(AiraSensorBase):
             if cop_now and cop_now > 0 and cop_now <= 8: 
                 return round(cop_now, 2)
             return None
-        except Exception as err:
-            _LOGGER.debug("Error getting energy_calculation %s", err)
-            return None
+        except (KeyError, ValueError, TypeError):
+                return None
 
 # ============================================================================
 # CURVE SENSOR
@@ -1489,7 +1483,7 @@ class AiraCurveSensor(AiraSensorBase):
             return None
         
         try:
-            outdoor_temp = float(self.coordinator.data["state"]["current_outdoor_temperature"])
+            outdoor_temp = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_ambient_temperature"])
 
             # get the heat curve points
             ambient = self.extra_state_attributes["ambient"]
