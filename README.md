@@ -48,7 +48,10 @@ Done! Now simply add an integration, you can do that from ha or by clicking here
 For more installation methods check [the wiki here](https://github.com/Invy55/ha-airahome/wiki/Installation)!
 
 ## 📋 Todo(s) <a name = "todo"></a>
-
+- [ ] Implement hot water boosting
+- [ ] Fix Write Not Permitted - #10
+- [ ] Fix Entities Missing - #1
+- [ ] Add thermostats as climate entities
 - [ ] Implement HA control features (set temperature, mode, etc.)
 - [ ] Add support for more sensors and data points
 
