@@ -2,37 +2,28 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Aira Cloud",
-        "description": "Enter your Aira account credentials to list your available devices",
+        "title": "Authenticate with Aira Cloud",
+        "description": "Enter your **Aira account credentials** to list your available devices. This is required since the account stores an important key needed to write data to the device over BLE.\n_Your credentials are only used to fetch this key and are not stored_",
         "data": {
-          "email": "Email",
-          "password": "Password"
+          "cloud_email": "Email",
+          "cloud_password": "Password"
         }
       },
       "select_device": {
-        "title": "Select Your Heat Pump",
-        "description": "Found **{device_count} device(s)** in your Aira account. Select the heat pump you want to add",
+        "title": "Select Your Device",
+        "description": "Found **{device_count} device(s)** in your Aira account. Select the device you want to add.\nIf your device is not listed, ensure it is registered in your Aira account. (Heat pumps are the only supported device type for now)",
         "data": {
-          "device": "Device"
+          "device": "Found Device(s):"
         }
       },
       "configure": {
-        "title": "Configure Data Polling",
-        "description": "Set how often data should be fetched from your heat pump. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors",
+        "title": "Configure Device Settings",
+        "description": "Set how often data should be fetched from your device. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors.\nAdjust the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "num_zones": "Number of Zones (1 or 2)",
+          "num_phases": "Number of Phases (1 or 3)"
         }
-      },
-      "manual_entry": {
-        "title": "Enter MAC Address",
-        "description": "Enter the Bluetooth MAC address of your Aira Heat Pump",
-        "data": {
-          "mac_address": "MAC Address"
-        }
-      },
-      "bluetooth_confirm": {
-        "title": "Confirm Aira Heat Pump",
-        "description": "Discovered device: **{name}**\nMAC Address: `{address}`\n\nDo you want to add this device?"
       }
     },
     "error": {
@@ -40,25 +31,32 @@
       "invalid_mac": "Invalid MAC address format. Please use format XX:XX:XX:XX:XX:XX",
       "invalid_auth": "Invalid email or password. Please check your credentials.",
       "no_devices_found": "No devices found in your Aira account.",
-      "unknown": "Unexpected error occurred"
+      "unknown": "An unexpected error occurred, please try again or check the logs.",
+      "cloud_timeout": "The cloud service did not respond in time. Please try again later.",
+      "cloud_unavailable": "The cloud service is currently unavailable. Please try again later.",
+      "cloud_error": "An error occurred while communicating with the cloud service. Please try again later."
     },
     "abort": {
-      "already_configured": "This device is already configured.",
+      "unsupported_device": "The selected device is not supported. Only Aira Heat Pumps can be configured for now.",
+      "already_configured": "This device is already configured. Please select another device.",
+      "no_devices_found": "All devices available in your Aira account are already configured. No new devices to add.",
       "bluetooth_unavailable": "Bluetooth is not available. Please ensure Bluetooth is enabled on your Home Assistant host.",
-      "device_not_found": "Invalid device. Selected device was not found.",
-      "ble_device_not_found": "BLE device not found. Make sure your heat pump is powered on and within Bluetooth range (10-30m). If the device is too far try using a bluetooth adapter or bluetooth repeaters like esphome.",
-      "cannot_connect": "Failed to connect to the selected device. Please ensure your heat pump is powered on and within range.",
-      "not_aira_device": "The discovered device is not an Aira Heat Pump.",
+      "device_not_found": "Invalid device. Selected device was not found in your Aira account. Make sure the device is registered in your account.",
+      "ble_device_not_found": "BLE device not found. Make sure your aira device is powered on and within Bluetooth range (5-15m). If the device is too far try using a bluetooth adapter or bluetooth repeaters like esphome.",
+      "cannot_connect": "Failed to connect to the selected device. Please ensure your aira device is powered on and within range.",
+      "not_aira_device": "The discovered device is not an aira device. Only Aira Heat Pumps can be configured for now.",
       "unknown": "An unexpected error occurred during setup."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Configure Aira Heat Pump",
-        "description": "Update the settings for your Aira Heat Pump",
+        "title": "Configure Device",
+        "description": "Update the settings for your Aira Device.\nAdjust the **update interval** to change how often data is fetched from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "num_zones": "Number of Zones (1 or 2)",
+          "num_phases": "Number of Phases (1 or 3)"
         }
       }
     }
@@ -73,5 +71,21 @@
     "scheduler_active": {
       "message": "Cannot set temperature while scheduler is active. Please disable the scheduler first."
     }
+  },
+  "device_type": {
+    "unspecified": "Unknown Device",
+    "heat_pump": "Heat Pump",
+    "battery": "Battery",
+    "inverter": "Inverter",
+    "photovoltaic": "Photovoltaic"
+  },
+  "zones": {
+    "1": "Single Zone",
+    "2": "Bi Zone"
+  },
+  "phases": {
+    "0": "Unknown",
+    "1": "Single Phase",
+    "3": "Three Phase"
   }
 }

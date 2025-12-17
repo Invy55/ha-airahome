@@ -5,7 +5,10 @@ DOMAIN = "airahome"
 CONF_MAC_ADDRESS = "mac_address"
 CONF_CLOUD_EMAIL = "cloud_email"
 CONF_CLOUD_PASSWORD = "cloud_password"
+CONF_NUM_ZONES = "num_zones"
+CONF_NUM_PHASES = "num_phases"
 CONF_CERTIFICATE = "certificate"
+CONF_INSTALLATION = "installation"
 CONF_DEVICE_UUID = "device_uuid"
 CONF_DEVICE_NAME = "device_name"
 CONF_SCAN_INTERVAL = "scan_interval"
@@ -26,3 +29,6 @@ ATTR_DEVICE_UUID = "device_uuid"
 ATTR_FIRMWARE_VERSION = "firmware_version"
 ATTR_MODEL = "model"
 ATTR_CONNECTION_TYPE = "connection_type"
+
+# Supported device types
+SUPPORTED_DEVICE_TYPES = ["heat_pump"]
