@@ -21,6 +21,46 @@ from .const import CONF_DEVICE_NAME, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAI
 _LOGGER = logging.getLogger(__name__)
 
 
+#TODO MOVE ENTIRE RECONNECT LOGIC HERE
+# Create reconnect callback for the coordinator
+    async def reconnect_device() -> bool:
+        """Reconnect to the BLE device using bleak-retry-connector for reliability."""
+        try:
+            # First, explicitly disconnect to clean up any stale connection state
+            _LOGGER.debug("Disconnecting before reconnection attempt")
+            try:
+                await aira.ble._disconnect()
+            except Exception as disc_err:
+                _LOGGER.debug("Disconnect during reconnect raised: %s (nothing to worry about)", disc_err)
+            
+            # Small delay to let the BLE stack stabilize
+            await asyncio.sleep(0.5)
+            
+            ble_device = bluetooth.async_ble_device_from_address(
+                hass, mac_address, connectable=True
+            )
+            if ble_device:
+                _LOGGER.info("Attempting reconnection to %s", ble_device.name)
+                
+                # Use standard connection (has built-in retry logic)
+                success = await hass.async_add_executor_job(
+                    aira.ble.connect_device,
+                    ble_device,
+                    BLE_CONNECT_TIMEOUT
+                )
+                if success:
+                    _LOGGER.info("Reconnected to Aira device via BLE successfully")
+
+                return success
+            else:
+                _LOGGER.warning("BLE device not found during reconnection attempt")
+                
+        except Exception as err:
+            _LOGGER.warning("Reconnect failed: %s", err)
+        return False
+# ! not needed in init since bleak retry connector is used. wont be needed here too, since we can just try a single attempt for it to try the 3 etc
+
+
 class AiraDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Aira data from BLE."""
 
@@ -29,8 +69,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         entry: ConfigEntry,
         aira: Any,
-        update_interval: int = 10,
-        reconnect_callback: Any | None = None,
+        update_interval: int = 10
     ) -> None:
         """Initialise coordinator."""
         super().__init__(

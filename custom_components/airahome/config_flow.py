@@ -230,6 +230,9 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                             local_id=selected_device.get("device_id", {}).get("local_id", {})
                         )
                     )
+
+                self._installation["type"] = device_type
+
                 # Retrieve certificate now for later usage, this way we can avoid storing credentials
                 self._certificate = details.get("heat_pump", {}).get("certificate", None)
                 if tank_size := details.get("heat_pump", {}).get("tank_size", None):
@@ -318,13 +321,13 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_MAC_ADDRESS: mac_address,
                     CONF_DEVICE_UUID: self._uuid,
                     CONF_DEVICE_NAME: name,
-                    CONF_CERTIFICATE: self._certificate
+                    CONF_CERTIFICATE: self._certificate,
+                    CONF_INSTALLATION: self._installation
                 },
                 options={
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
                     CONF_NUM_ZONES: user_input.get(CONF_NUM_ZONES, self._installation.get(CONF_NUM_ZONES, 1)),
-                    CONF_NUM_PHASES: user_input.get(CONF_NUM_PHASES, self._installation.get(CONF_NUM_PHASES, 0)),
-                    CONF_INSTALLATION: self._installation
+                    CONF_NUM_PHASES: user_input.get(CONF_NUM_PHASES, self._installation.get(CONF_NUM_PHASES, 0))
                 }
             )
         
