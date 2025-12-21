@@ -15,8 +15,6 @@ from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryError
 
 from .const import (
     BLE_CONNECT_TIMEOUT,
-    CONF_CLOUD_EMAIL,
-    CONF_CLOUD_PASSWORD,
     CONF_CERTIFICATE,
     CONF_DEVICE_UUID,
     CONF_INSTALLATION,
@@ -81,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "Make sure the device is powered on and within range.",
             mac_address
         )
-        raise ConfigEntryError("Device not found in Home Assistant's bluetooth. Please ensure the device is powered on and within range.")
+        raise ConfigEntryNotReady("Device not found in Home Assistant's bluetooth. Please ensure the device is powered on and within range.")
     
     # Connect aira instance to the device
     try:
@@ -100,7 +98,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("Using set scan interval of %d seconds", scan_interval)
 
     # Create data update coordinator
-    coordinator = AiraDataUpdateCoordinator(hass, entry, aira, scan_interval)
+    coordinator = AiraDataUpdateCoordinator(hass, entry, aira, scan_interval, mac_address)
     
     await coordinator.async_config_entry_first_refresh()
 
@@ -108,7 +106,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
         "aira": aira,
-        "mac_address": mac_address, # TODO CHECK IF NEEDED
         "device_uuid": device_uuid  # TODO CHECK IF NEEDED
     }
     
@@ -130,8 +127,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Stop the coordinator
     if coordinator:
-        coordinator.async_stop()
         _LOGGER.debug("Data update coordinator stopped")
+        # nothing particular to do here as coordinator is stopped by ha
     
     # Clean up BLE connection and resources
     if aira and aira.ble:

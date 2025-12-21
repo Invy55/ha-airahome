@@ -8,6 +8,7 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
+    SensorEntityDescription
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -470,7 +471,7 @@ async def async_setup_entry(
         # _LOGGER.debug("  system_check keys: %s", coordinator.data.get("system_check", {}))
         _LOGGER.debug("  state keys: %s", list(coordinator.data.get("state", {}).keys()))
         # _LOGGER.debug("  flow_data keys: %s", list(coordinator.data.get("flow_data", {}).keys()))
-        _LOGGER.debug("  system_check keys: %s", list(coordinator.data.get("system_check", {}).keys()))
+        _LOGGER.debug("  system_check_state keys: %s", list(coordinator.data.get("system_check_state", {}).keys()))
     else:
         _LOGGER.warning("Coordinator data is empty - this will cause sensor issues")
     
@@ -489,11 +490,19 @@ class AiraSensorBase(CoordinatorEntity, SensorEntity):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
+        unique_id_suffix: str
     ) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator)
         self._device_uuid = entry.data[CONF_DEVICE_UUID]
-        
+
+        #self.entity_description = SensorEntityDescription(
+        #    key=unique_id_suffix,
+        #    translation_key=unique_id_suffix
+        #)
+
+        self._attr_translation_key = unique_id_suffix
+
         self._attr_device_info = DeviceInfo(**{
             "identifiers": {(DOMAIN, self._device_uuid)},
             "connections": {(dr.CONNECTION_BLUETOOTH, entry.data.get(CONF_MAC_ADDRESS))},
@@ -528,8 +537,8 @@ class AiraTemperatureSensor(AiraSensorBase):
         divide_by_10: bool = False,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry)
-        self._attr_name = name
+        super().__init__(coordinator, entry, unique_id_suffix)
+        #self._attr_name = name # TODO
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
@@ -576,9 +585,10 @@ class AiraScheduledTemperatureSensor(AiraSensorBase):
     _attr_suggested_display_precision = 2
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_scheduled_temp"
-        
+        unique_id_suffix = "scheduled_temp"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+
     @property
     def native_value(self) -> float | None:
         try:
@@ -630,7 +640,7 @@ class AiraHumiditySensor(AiraSensorBase):
         divide_by_10: bool = False,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -688,7 +698,7 @@ class AiraSignalStrengthSensor(AiraSensorBase):
         enabled_by_default: bool = True,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
@@ -759,7 +769,7 @@ class AiraVoltageSensor(AiraSensorBase):
         icon: str = "mdi:flash",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -800,7 +810,7 @@ class AiraCurrentSensor(AiraSensorBase):
         icon: str = "mdi:current-ac",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -847,7 +857,7 @@ class AiraPowerSensor(AiraSensorBase):
         enabled_by_default: bool = True,
         allowed_status: list[str] | None = None
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit_of_measurement
@@ -904,7 +914,7 @@ class AiraEnergySensor(AiraSensorBase):
         enabled_by_default: bool = True,
         state_class=SensorStateClass.TOTAL_INCREASING
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit_of_measurement
@@ -955,10 +965,10 @@ class AiraInstantHeatSensor(AiraSensorBase):
             entry: ConfigEntry, unit_of_measurement: str = UnitOfPower.WATT,
             enabled_by_default: bool = True,
             ) -> None:
-        """Initialise the sensor."""
-        super().__init__(coordinator, entry)
+        unique_id_suffix = f"instant_heat_{unit_of_measurement.lower()}"        
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = f"Instant Heat Production ({unit_of_measurement.lower().replace('w', 'W')})"
-        self._attr_unique_id = f"{self._device_uuid}_instant_heat_{unit_of_measurement.lower()}"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._attr_entity_registry_enabled_default = enabled_by_default
 
@@ -1000,7 +1010,7 @@ class AiraPressureSensor(AiraSensorBase):
         icon: str = "mdi:thermometer-lines",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -1044,7 +1054,7 @@ class AiraRotationSpeedSensor(AiraSensorBase):
         icon: str = "mdi:rotate-right",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -1080,8 +1090,9 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_energy_balance"
+        unique_id_suffix = "energy_balance"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> int | None:
@@ -1113,7 +1124,7 @@ class AiraFlowRateSensor(AiraSensorBase):
         data_path: tuple[str, ...],
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
@@ -1164,7 +1175,7 @@ class AiraFrequencySensor(AiraSensorBase):
         icon: str = "mdi:sine-wave",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -1207,7 +1218,7 @@ class AiraPercentageSensor(AiraSensorBase):
             icon: str = "mdi:percent",
             enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
@@ -1244,8 +1255,9 @@ class AiraEEVStepSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_eev_step"
+        unique_id_suffix = "eev_step"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> int | None:
@@ -1274,7 +1286,7 @@ class AiraEnumSensor(AiraSensorBase):
         icon: str = "mdi:information-outline",
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
@@ -1312,8 +1324,9 @@ class AiraLEDPatternSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_led_pattern"
+        unique_id_suffix = "led_pattern"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> str | None:
@@ -1376,8 +1389,9 @@ class AiraInstantCOPSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_instant_cop"
+        unique_id_suffix = "instant_cop"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> float | None:
@@ -1407,8 +1421,9 @@ class AiraCumulativeCOPSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_cumulative_cop"
+        unique_id_suffix = "cumulative_cop"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> float | None:
@@ -1435,8 +1450,9 @@ class AiraDeviceCOPSensor(AiraSensorBase):
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
-        super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{self._device_uuid}_reported_cop"
+        unique_id_suffix = "reported_cop"
+        super().__init__(coordinator, entry, unique_id_suffix)
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
 
     @property
     def native_value(self) -> float | None:
@@ -1472,9 +1488,10 @@ class AiraCurveSensor(AiraSensorBase):
             zone: int,
             heating: bool = True
     ) -> None:
-        super().__init__(coordinator, entry)
+        unique_id_suffix = f"zone_{zone}_{'heating' if heating else 'cooling'}_curve"
+        super().__init__(coordinator, entry, unique_id_suffix)
         self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
-        self._attr_unique_id = f"{self._device_uuid}_zone_{zone}_{'heating' if heating else 'cooling'}_curve"
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._zone = zone
         self._heating = heating
 

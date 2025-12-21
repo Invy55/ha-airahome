@@ -22,6 +22,7 @@ STALE_DATA_THRESHOLD = 600  # seconds (10 minutes) - keep old data if fresher th
 # BLE connection timeouts (increased for poor connectivity scenarios)
 BLE_CONNECT_TIMEOUT = 30  # seconds - timeout for establishing BLE connection
 BLE_DISCOVERY_TIMEOUT = 20  # seconds - timeout for BLE device discovery
+BLE_COMMAND_SLEEP = 1.5  # seconds - delay between BLE commands to avoid overwhelming the device
 
 # Attributes
 ATTR_MAC_ADDRESS = "mac_address"
@@ -32,3 +33,11 @@ ATTR_CONNECTION_TYPE = "connection_type"
 
 # Supported device types
 SUPPORTED_DEVICE_TYPES = ["heat_pump"]
+
+# Default data structure
+DEFAULT_DATA = {
+    "state": {},
+    "system_check_state": {},
+    "connected": False,
+    "rssi": None,
+}
