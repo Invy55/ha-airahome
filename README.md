@@ -48,12 +48,24 @@ Done! Now simply add an integration, you can do that from ha or by clicking here
 For more installation methods check [the wiki here](https://github.com/Invy55/ha-airahome/wiki/Installation)!
 
 ## 📋 Todo(s) <a name = "todo"></a>
-- [ ] Implement hot water boosting
-- [ ] Fix Write Not Permitted - #10
-- [ ] Fix Entities Missing - #1
-- [ ] Add thermostats as climate entities
-- [ ] Implement HA control features (set temperature, mode, etc.)
+### For pre-release
+- [x] Save useful data during set-up by connecting to the unit - [1](https://github.com/Invy55/ha-airahome/commit/9e5cae05ad9e5aaaa14fd1f9033550274e10654d) [2](https://github.com/Invy55/ha-airahome/commit/76b28708c0f734adc82c776817cdcbffc2e58f17)
+- [ ] Rewrite zones and phases detections to prevent #1
+- [ ] Understand the best procedure for connection issues (stop the integration? prompt the user after a number of checks? let ha handle it?)
+- [ ] Rewrite entities with strings/lang(s).json - [1](https://github.com/Invy55/ha-airahome/commit/7f572373c9ff9777b829ea03e35fce92b401ad19)
+- [x] Fix BLE autodiscovery and pairing - [1](https://github.com/Invy55/ha-airahome/commit/9e5cae05ad9e5aaaa14fd1f9033550274e10654d)
+- [ ] Write an exhaustive [bluetooth issues guide](https://github.com/Invy55/ha-airahome/wiki/Bluetooth-Issues)
+- [ ] Implement actions (hot_water_boosting, set_dhw_temperature, ..., refresh_saved_data)
+- [ ] Add entities for heat pump version
+- [ ] Add thermostats climate entities
+
+### General
 - [ ] Add support for more sensors and data points
+
+### Future/Not possible
+- [ ] Fix Write Not Permitted - #10
+- [ ] Add support for solar plants
+
 
 Suggestions and contributions are welcome! Feel free to open an issue or pull request with your ideas.
 
