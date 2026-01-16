@@ -348,6 +348,23 @@ async def async_setup_entry(
             unique_id_suffix="system_rssi",
             data_path=("rssi", )
         ),
+        # === VERSION SENSORS ===
+        # These return the software versions of the indoor/outdoor units
+        AiraStringSensor(coordinator, entry,
+            name="Software Version",
+            unique_id_suffix="software_version",
+            data_path=("state", "versions", "connectivity_manager")
+        ),
+        AiraStringSensor(coordinator, entry,
+            name="Outdoor Software Version",
+            unique_id_suffix="outdoor_software_version",
+            data_path=("state", "versions", "outdoor_unit_application")
+        ),
+        AiraStringSensor(coordinator, entry,
+            name="Platform Version",
+            unique_id_suffix="platform_version",
+            data_path=("state", "versions", "linux_build_id")
+        ),
     ]
 
     # PER ZONE LOOP
@@ -1226,6 +1243,50 @@ class AiraPercentageSensor(AiraSensorBase):
                     value = value[path]
 
                 return int(value)
+            except (KeyError, ValueError, TypeError):
+                return None
+        return None
+    
+# ============================================================================
+# STRING SENSOR
+# ============================================================================
+
+class AiraStringSensor(AiraSensorBase):
+    """Base class for all string sensors."""
+
+    _attr_device_class = None
+    _attr_state_class = None
+    _attr_native_unit_of_measurement = None
+
+    def __init__(
+            self,
+            coordinator: AiraDataUpdateCoordinator,
+            entry: ConfigEntry,
+            name: str,
+            unique_id_suffix: str,
+            data_path: tuple[str, ...],
+            icon: str = "mdi:information-outline",
+            enabled_by_default: bool = True,
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_name = name
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        self._data_path = data_path
+        self._attr_icon = icon
+        self._attr_entity_registry_enabled_default = enabled_by_default
+    
+    @property
+    def native_value(self) -> str | None:
+        if not self.coordinator.data:
+            return None
+
+        if self._data_path:
+            value = self.coordinator.data
+            try:
+                for path in self._data_path:
+                    value = value[path]
+
+                return value
             except (KeyError, ValueError, TypeError):
                 return None
         return None
