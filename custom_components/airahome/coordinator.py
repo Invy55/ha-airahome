@@ -103,14 +103,14 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         successful = True
         # If we have stale data and current fetch returned empty, use stale values
         if self._last_successful_data and perf_counter() - self._last_successful_timestamp < STALE_DATA_THRESHOLD:
-            if not state_dict and self._last_successful_data.get("state"):
+            if (not state_dict and self._last_successful_data.get("state")) or (state_dict and state_dict.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
                 state_dict = self._last_successful_data["state"]
                 successful = False
                 _LOGGER.debug("Using stale state data due to empty fetch")
             #if not flow_dict and self._last_successful_data.get("flow_data"):
             #    flow_dict = self._last_successful_data["flow_data"]
             #    _LOGGER.debug("Using stale flow data due to empty fetch")
-            if not system_dict and self._last_successful_data.get("system_check"):
+            if (not system_dict and self._last_successful_data.get("system_check")) or (system_dict and system_dict.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"): # if dict is empty or it has some errors
                 system_dict = self._last_successful_data["system_check"]
                 _LOGGER.debug("Using stale system_check data due to empty fetch")
 
