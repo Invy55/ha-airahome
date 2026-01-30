@@ -353,17 +353,20 @@ async def async_setup_entry(
         AiraStringSensor(coordinator, entry,
             name="Software Version",
             unique_id_suffix="software_version",
-            data_path=("state", "versions", "connectivity_manager")
+            data_path=("state", "versions", "connectivity_manager"),
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraStringSensor(coordinator, entry,
             name="Outdoor Software Version",
             unique_id_suffix="outdoor_software_version",
-            data_path=("state", "versions", "outdoor_unit_application")
+            data_path=("state", "versions", "outdoor_unit_application"),
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraStringSensor(coordinator, entry,
             name="Platform Version",
             unique_id_suffix="platform_version",
-            data_path=("state", "versions", "linux_build_id")
+            data_path=("state", "versions", "linux_build_id"),
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
     ]
 
@@ -1267,6 +1270,7 @@ class AiraStringSensor(AiraSensorBase):
             data_path: tuple[str, ...],
             icon: str = "mdi:information-outline",
             enabled_by_default: bool = True,
+            entity_category: EntityCategory | None = None,
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_name = name
@@ -1274,6 +1278,8 @@ class AiraStringSensor(AiraSensorBase):
         self._data_path = data_path
         self._attr_icon = icon
         self._attr_entity_registry_enabled_default = enabled_by_default
+        if entity_category is not None:
+            self._attr_entity_category = entity_category
     
     @property
     def native_value(self) -> str | None:
