@@ -36,6 +36,7 @@ from .const import (
     CONF_NUM_ZONES,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_NAME,
+    DEFAULT_NUM_ZONES,
     DOMAIN,
     SUPPORTED_DEVICE_TYPES
 )
@@ -246,7 +247,7 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                         )
                     )
                 _LOGGER.debug("Retrieved device states: %s", states)
-                self._installation[CONF_NUM_ZONES] = states.get("heat_pump_states", [{}])[0].get(CONF_NUM_ZONES, 1) # default to 1 zone if not provided
+                self._installation[CONF_NUM_ZONES] = states.get("heat_pump_states", [{}])[0].get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES) # default to DEFAULT_NUM_ZONES zone if not provided
                 #self._installation["num_phases"] = unknown, there is no way to know before connecting...
 
 
@@ -326,7 +327,7 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 },
                 options={
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                    CONF_NUM_ZONES: user_input.get(CONF_NUM_ZONES, self._installation.get(CONF_NUM_ZONES, 1)),
+                    CONF_NUM_ZONES: user_input.get(CONF_NUM_ZONES, self._installation.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)),
                     CONF_NUM_PHASES: user_input.get(CONF_NUM_PHASES, self._installation.get(CONF_NUM_PHASES, 0))
                 }
             )
@@ -361,7 +362,7 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 ): vol.All(vol.Coerce(int), vol.Range(min=20, max=300)),
                 vol.Required(
                     CONF_NUM_ZONES,
-                    default=self._installation.get(CONF_NUM_ZONES, 1)
+                    default=self._installation.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)
                 ): vol.In({
                     1: await get_translated_zone(1, self.hass),
                     2: await get_translated_zone(2, self.hass)
@@ -507,7 +508,7 @@ class AiraHomeOptionsFlowHandler(OptionsFlowWithReload):
         )
 
         current_num_zones = self.config_entry.options.get(
-            CONF_NUM_ZONES, 1
+            CONF_NUM_ZONES, DEFAULT_NUM_ZONES
         )
 
         current_num_phases = self.config_entry.options.get(

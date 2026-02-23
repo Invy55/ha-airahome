@@ -6,6 +6,7 @@ import logging
 from typing import Any
 from functools import partial
 from datetime import timedelta
+from copy import deepcopy
 from time import perf_counter
 
 from homeassistant.components import bluetooth
@@ -55,12 +56,12 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         self._last_successful_timestamp = None
         
         # Initialize coordinator data with empty but valid data structure to prevent sensor crashes
-        self.data = DEFAULT_DATA.copy()
+        self.data = deepcopy(DEFAULT_DATA)
 
     async def _fetch_all_data(self, start_time: float, rssi: int | None) -> dict[str, Any]:
         """Fetch all data from the Aira device via BLE."""
         start_time = perf_counter()
-        state_data: dict = await self.aira.ble._get_states() # type: ignore
+        state_data: dict = await self.aira.ble._get_states() # type: ignore[reportAssignmentType]
 
         await asyncio.sleep(BLE_COMMAND_SLEEP) # ensure BLE_COMMAND_SLEEP between calls
 
@@ -76,17 +77,21 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         state_dict = state_data.get("state", {}) if state_data else {}
         system_dict = system_check_state.get("system_check_state", {}) if system_check_state else {}
 
-        successful = True
+        successful = 2
         # If we have stale data and current fetch returned empty, use stale values
         if self._last_successful_data and perf_counter() - self._last_successful_timestamp < STALE_DATA_THRESHOLD: # type: ignore
-            if not state_dict and self._last_successful_data.get("state"):
+            # Handle empty result or aira errors
+            if (not state_dict and self._last_successful_data.get("state")) or \
+               (state_data and state_data.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
                 state_dict = self._last_successful_data["state"]
-                successful = False
-                _LOGGER.debug("Using stale state data due to empty fetch")
+                successful -= 1
+                _LOGGER.debug("Using stale state data due to empty fetch or error")
 
-            if not system_dict and self._last_successful_data.get("system_check_state"):
+            if (not system_dict and self._last_successful_data.get("system_check_state")) or \
+               (system_check_state and system_check_state.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
                 system_dict = self._last_successful_data["system_check_state"]
-                _LOGGER.debug("Using stale system_check data due to empty fetch")
+                successful -= 1
+                _LOGGER.debug("Using stale system_check data due to empty fetch or error")
 
         # Record completion time for next cycle (monotonic)
         self._last_update_time = perf_counter()
@@ -100,13 +105,13 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         
         # Only store as successful if we actually got some real data
         # Check if at least state data has content (it's the most important)
-        if successful:
+        if successful == 2:
             self._last_successful_data = result
             # Record monotonic timestamp for age checks
             self._last_successful_timestamp = perf_counter()
             _LOGGER.info("Data fetch successful, updated last_successful_data")
         else:
-            _LOGGER.warning("Data fetch returned empty state, not updating last_successful_data")
+            _LOGGER.warning("Data fetch returned empty state or error, leaving last_successful_data as is")
         
         return result
 
@@ -213,7 +218,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 is_connected = False
 
             # Device is not connected, return stale data if available
-            stale_result = DEFAULT_DATA.copy()
+            stale_result = deepcopy(DEFAULT_DATA)
             if self._last_successful_data and self._last_successful_timestamp:
                 age = start_time - self._last_successful_timestamp
                 if age < STALE_DATA_THRESHOLD:
@@ -222,10 +227,10 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         age
                     )
                     # Return last good data but mark as disconnected
-                    stale_result = self._last_successful_data.copy()
+                    stale_result = deepcopy(self._last_successful_data)
                     stale_result["connected"] = False
                     stale_result["rssi"] = rssi  # Update RSSI even if using stale data
-                    #return stale_result # TODO MOVED BELOW AFTER SCHEDULING RECONNECT ATTEMPT
+                    #return stale_result # return after the reconnect logic has been handled
 
 
             # Device is not connected, attempt reconnection
@@ -240,7 +245,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             else:
                 # If we reach this point something is seriously wrong, the best thing is asking the user to
                 # manually intervene. The most common issue in my experience is the bluetooth cache being
-                # stale because aira seems to not send Service Changed indications properly. Forcing unpairing
+                # stale because aira seems to not send Service Changed indications properly. Rebooting the host
                 # is the only way to recover from this since it should reset the cache. For more infos check
                 # https://github.com/Invy55/ha-airahome/wiki/Bluetooth-Issues
                 _LOGGER.error(
@@ -250,8 +255,8 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
 
                 raise ConfigEntryError(
                     "Bluetooth connection failed after multiple attempts. "
-                    "This often means the host's Bluetooth cache is stale — removing/unpairing the device (or rebooting the host / replugging the adapter) and re-pairing may help. "
-                    "Another solution could be using esphome proxies for connecting to the device, since we can disable caching there. "
+                    "This often means the host's Bluetooth cache is stale -- rebooting the host / replugging the adapter (or removing/unpairing the device and re-pairing) may help. "
+                    "Another solution could be using esphome proxies for connecting to the device, since we can forcely disable caching there. "
                     "See https://github.com/Invy55/ha-airahome/wiki/Bluetooth-Issues for more details."
                 )
             

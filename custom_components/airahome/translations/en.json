@@ -2,37 +2,28 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Aira Cloud",
-        "description": "Enter your Aira account credentials to list your available devices",
+        "title": "Authenticate with Aira Cloud",
+        "description": "Enter your **Aira account credentials** to list your available devices. This is required since the account stores an important key needed to write data to the device over BLE.\n_Your credentials are only used to fetch this key and are not stored_",
         "data": {
-          "email": "Email",
-          "password": "Password"
+          "cloud_email": "Email",
+          "cloud_password": "Password"
         }
       },
       "select_device": {
-        "title": "Select Your Heat Pump",
-        "description": "Found **{device_count} device(s)** in your Aira account. Select the heat pump you want to add",
+        "title": "Select Your Device",
+        "description": "Found **{device_count} device(s)** in your Aira account. Select the device you want to add.\nIf your device is not listed, ensure it is registered in your Aira account. (Heat pumps are the only supported device type for now)",
         "data": {
-          "device": "Device"
+          "device": "Found Device(s):"
         }
       },
       "configure": {
-        "title": "Configure Data Polling",
-        "description": "Set how often data should be fetched from your heat pump. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors",
+        "title": "Configure Device Settings",
+        "description": "Set how often data should be fetched from your device. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors.\nAdjust the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "num_zones": "Number of Zones (1 or 2)",
+          "num_phases": "Number of Phases (1 or 3)"
         }
-      },
-      "manual_entry": {
-        "title": "Enter MAC Address",
-        "description": "Enter the Bluetooth MAC address of your Aira Heat Pump",
-        "data": {
-          "mac_address": "MAC Address"
-        }
-      },
-      "bluetooth_confirm": {
-        "title": "Confirm Aira Heat Pump",
-        "description": "Discovered device: **{name}**\nMAC Address: `{address}`\n\nDo you want to add this device?"
       }
     },
     "error": {
@@ -40,26 +31,34 @@
       "invalid_mac": "Invalid MAC address format. Please use format XX:XX:XX:XX:XX:XX",
       "invalid_auth": "Invalid email or password. Please check your credentials.",
       "no_devices_found": "No devices found in your Aira account.",
-      "unknown": "Unexpected error occurred"
+      "unknown": "An unexpected error occurred, please try again or check the logs.",
+      "cloud_timeout": "The cloud service did not respond in time. Please try again later.",
+      "cloud_unavailable": "The cloud service is currently unavailable. Please try again later.",
+      "cloud_error": "An error occurred while communicating with the cloud service. Please try again later."
     },
     "abort": {
-      "already_configured": "This device is already configured.",
+      "unsupported_device": "The selected device is not supported. Only Aira Heat Pumps can be configured for now.",
+      "already_configured": "This device is already configured. Please select another device.",
+      "no_devices_found": "All devices available in your Aira account are already configured. No new devices to add.",
       "bluetooth_unavailable": "Bluetooth is not available. Please ensure Bluetooth is enabled on your Home Assistant host.",
-      "device_not_found": "Invalid device. Selected device was not found.",
-      "ble_device_not_found": "BLE device not found. Make sure your heat pump is powered on and within Bluetooth range (10-30m). If the device is too far try using a bluetooth adapter or bluetooth repeaters like esphome.",
-      "cannot_connect": "Failed to connect to the selected device. Please ensure your heat pump is powered on and within range.",
-      "not_aira_device": "The discovered device is not an Aira Heat Pump.",
+      "device_not_found": "Invalid device. Selected device was not found in your Aira account. Make sure the device is registered in your account.",
+      "ble_device_not_found": "BLE device not found. Make sure your aira device is powered on and within Bluetooth range (5-15m). If the device is too far try using a bluetooth adapter or bluetooth repeaters like esphome.",
+      "cannot_connect": "Failed to connect to the selected device. Please ensure your aira device is powered on and within range.",
+      "not_aira_device": "The discovered device is not an aira device. Only Aira Heat Pumps can be configured for now.",
       "unknown": "An unexpected error occurred during setup."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Configure Aira Heat Pump",
-        "description": "Update the settings for your Aira Heat Pump",
+        "title": "Configure Device",
+        "description": "Update the settings for your Aira Device.\nAdjust the **update interval** to change how often data is fetched from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
-        }
+          "scan_interval": "Update Interval (seconds)",
+          "num_zones": "Number of Zones (1 or 2)",
+          "num_phases": "Number of Phases (1 or 3)"
+        },
+        "data_description": {}
       }
     }
   },
@@ -73,5 +72,100 @@
     "scheduler_active": {
       "message": "Cannot set temperature while scheduler is active. Please disable the scheduler first."
     }
+  },
+  "entity": {
+    "sensor": {
+      "hot_water_temp": { "name": "DHW Temperature" },
+      "target_hot_water_temp": { "name": "Target DHW Temperature" },
+      "scheduled_temp": { "name": "DHW Scheduled Temperature" },
+      "outdoor_temp": { "name": "Outdoor Temperature" },
+      "indoor_supply_temp": { "name": "Indoor Unit Supply Temperature" },
+      "calculated_supply_temp": { "name": "Calculated Supply Temperature" },
+      "ou_supply_temp": { "name": "OU Supply Temperature" },
+      "ou_return_temp": { "name": "OU Return Temperature" },
+      "evaporator_coil_temp": { "name": "OU Evaporator Coil Temperature" },
+      "gas_discharge_temp": { "name": "OU Gas Discharge Temperature" },
+      "gas_return_temp": { "name": "OU Gas Return Temperature" },
+      "condensing_temp": { "name": "OU Condensing Temperature" },
+      "evaporating_temp": { "name": "OU Evaporating Temperature" },
+      "inner_coil_temp": { "name": "OU Inner Coil Temperature" },
+      "ou_voltage": { "name": "OU Voltage" },
+      "ou_current": { "name": "OU Current" },
+      "ou_evaporator_pressure": { "name": "OU Evaporator Pressure" },
+      "ou_condenser_pressure": { "name": "OU Condenser Pressure" },
+      "ou_fan_1_speed": { "name": "OU Fan 1 Speed" },
+      "ou_fan_2_speed": { "name": "OU Fan 2 Speed" },
+      "ou_compressor_speed": { "name": "OU Compressor Speed" },
+      "ou_compressor_freq_limit": { "name": "OU Compressor Frequency Limit" },
+      "ou_compressor_need": { "name": "OU Compressor Need Percent" },
+      "ou_compressor_limit": { "name": "OU Compressor Limit Percent" },
+      "eev_step": { "name": "Electronic Expansion Valve Step" },
+      "instant_power_kw": { "name": "Instant Power Consumption (kW)" },
+      "instant_power_w": { "name": "Instant Power Consumption (W)" },
+      "dhw_instant_power_kw": { "name": "DHW Instant Power Consumption (kW)" },
+      "dhw_instant_power_w": { "name": "DHW Instant Power Consumption (W)" },
+      "hc_instant_power_kw": { "name": "H/C Instant Power Consumption (kW)" },
+      "hc_instant_power_w": { "name": "H/C Instant Power Consumption (W)" },
+      "instant_heat_kw": { "name": "Instant Heat Production (kW)" },
+      "instant_heat_w": { "name": "Instant Heat Production (W)" },
+      "electricity_kwh": { "name": "Total Electricity Consumption (kWh)" },
+      "electricity_wh": { "name": "Total Electricity Consumption (Wh)" },
+      "heat_kwh": { "name": "Total Heat Produced (kWh)" },
+      "heat_wh": { "name": "Total Heat Produced (Wh)" },
+      "energy_balance": { "name": "Energy Balance" },
+      "flow_meter_1": { "name": "Primary Circuit Flow" },
+      "flow_meter_2": { "name": "DHW Tank Inlet Flow" },
+      "operating_status": { "name": "Operating Status" },
+      "active_state": { "name": "HP Active State" },
+      "led_pattern": { "name": "LED Pattern" },
+      "system_rssi": { "name": "BLE Signal Strength" },
+      "instant_cop": { "name": "Instant COP" },
+      "cumulative_cop": { "name": "Cumulative COP" },
+      "reported_cop": { "name": "Heatpump Reported COP" },
+      "voltage_phase_0": { "name": "Voltage Phase 0" },
+      "voltage_phase_1": { "name": "Voltage Phase 1" },
+      "voltage_phase_2": { "name": "Voltage Phase 2" },
+      "current_phase_0": { "name": "Current Phase 0" },
+      "current_phase_1": { "name": "Current Phase 1" },
+      "current_phase_2": { "name": "Current Phase 2" },
+      "zone_1_supply_temp": { "name": "Zone 1 Supply Temperature" },
+      "zone_1_temp": { "name": "Zone 1 Temperature" },
+      "zone_1_humidity": { "name": "Zone 1 Humidity" },
+      "zone_1_rssi": { "name": "Zone 1 Signal Strength" },
+      "zone_1_active_state": { "name": "HP Zone 1 State" },
+      "zone_1_valve_position": { "name": "Zone 1 Valve Position" },
+      "zone_1_calculated_supply_temp": { "name": "Zone 1 Calculated Supply Temperature" },
+      "zone_1_heat_target": { "name": "Zone 1 Heating Target" },
+      "zone_1_cool_target": { "name": "Zone 1 Cooling Target" },
+      "zone_1_heating_curve": { "name": "Zone 1 Heating Curve" },
+      "zone_1_cooling_curve": { "name": "Zone 1 Cooling Curve" },
+      "zone_2_supply_temp": { "name": "Zone 2 Supply Temperature" },
+      "zone_2_temp": { "name": "Zone 2 Temperature" },
+      "zone_2_humidity": { "name": "Zone 2 Humidity" },
+      "zone_2_rssi": { "name": "Zone 2 Signal Strength" },
+      "zone_2_active_state": { "name": "HP Zone 2 State" },
+      "zone_2_valve_position": { "name": "Zone 2 Valve Position" },
+      "zone_2_calculated_supply_temp": { "name": "Zone 2 Calculated Supply Temperature" },
+      "zone_2_heat_target": { "name": "Zone 2 Heating Target" },
+      "zone_2_cool_target": { "name": "Zone 2 Cooling Target" },
+      "zone_2_heating_curve": { "name": "Zone 2 Heating Curve" },
+      "zone_2_cooling_curve": { "name": "Zone 2 Cooling Curve" }
+    }
+  },
+  "device_type": {
+    "unspecified": "Unknown Device",
+    "heat_pump": "Heat Pump",
+    "battery": "Battery",
+    "inverter": "Inverter",
+    "photovoltaic": "Photovoltaic"
+  },
+  "zones": {
+    "1": "Single Zone",
+    "2": "Bi Zone"
+  },
+  "phases": {
+    "0": "Unknown",
+    "1": "Single Phase",
+    "3": "Three Phase"
   }
 }

@@ -31,7 +31,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, CONF_NUM_PHASES, DEFAULT_SHORT_NAME, DOMAIN,CONF_NUM_ZONES, DEFAULT_NUM_ZONES
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,32 +48,27 @@ async def async_setup_entry(
     sensors: list[SensorEntity] = [
         # === TEMPERATURE SENSORS ===
         AiraTemperatureSensor(coordinator, entry,
-            name="DHW Temperature",
             unique_id_suffix="hot_water_temp",
             data_path=("state", "current_hot_water_temperature"),
             icon="mdi:water-thermometer"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="Target DHW Temperature",
             unique_id_suffix="target_hot_water_temp",
             data_path=("state", "target_hot_water_temperature"),
             icon="mdi:water-thermometer-outline"
         ),
         AiraScheduledTemperatureSensor(coordinator, entry),
         AiraTemperatureSensor(coordinator, entry,
-            name="Outdoor Temperature",
             unique_id_suffix="outdoor_temp",
             data_path=("system_check", "sensor_values", "outdoor_unit_ambient_temperature"),
             icon="mdi:thermometer"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="Indoor Unit Supply Temperature",
             unique_id_suffix="indoor_supply_temp",
             data_path=("system_check", "sensor_values", "indoor_unit_supply_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="Calculated Supply Temperature",
             unique_id_suffix="calculated_supply_temp",
             data_path=("system_check", "calculated_setpoints", "supply"),
             icon="mdi:thermometer-water",
@@ -82,54 +77,46 @@ async def async_setup_entry(
         # === OUTDOOR UNIT SENSORS ===
         # Temperatures
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Supply Temperature",
             unique_id_suffix="ou_supply_temp",
             data_path=("system_check", "sensor_values", "outdoor_unit_supply_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Return Temperature",
             unique_id_suffix="ou_return_temp",
             data_path=("system_check", "sensor_values", "outdoor_unit_return_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Evaporator Coil Temperature",
             unique_id_suffix="evaporator_coil_temp",
             data_path=("system_check", "megmet_status", "evaporator_coil_temperature"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Gas Discharge Temperature",
             unique_id_suffix="gas_discharge_temp",
             data_path=("system_check", "megmet_status", "gas_discharge_temperature"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Gas Return Temperature",
             unique_id_suffix="gas_return_temp",
             data_path=("system_check", "megmet_status", "gas_return_temperature"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Condensing Temperature",
             unique_id_suffix="condensing_temp",
             data_path=("system_check", "megmet_status", "condensing_temperature"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Evaporating Temperature",
             unique_id_suffix="evaporating_temp",
             data_path=("system_check", "megmet_status", "evaporating_temperature"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name="OU Inner Coil Temperature",
             unique_id_suffix="inner_coil_temp",
             data_path=("system_check", "megmet_status", "inner_coil_temperature"),
             icon="mdi:thermometer-lines",
@@ -137,14 +124,12 @@ async def async_setup_entry(
         ),
         # Electrical
         AiraVoltageSensor(coordinator, entry,
-            name="OU Voltage",
             unique_id_suffix="ou_voltage",
             data_path=("system_check", "megmet_status", "ac_input_voltage"),
             icon="mdi:flash",
             enabled_by_default=False
         ),
         AiraCurrentSensor(coordinator, entry,
-            name="OU Current",
             unique_id_suffix="ou_current",
             data_path=("system_check", "megmet_status", "ac_input_current"),
             icon="mdi:current-ac",
@@ -152,14 +137,12 @@ async def async_setup_entry(
         ),
         # Pressures
         AiraPressureSensor(coordinator, entry,
-            name="OU Evaporator Pressure",
             unique_id_suffix="ou_evaporator_pressure",
             data_path=("system_check", "megmet_status", "evaporator_pressure"),
             icon="mdi:thermometer-lines",
             enabled_by_default=False
         ),
         AiraPressureSensor(coordinator, entry,
-            name="OU Condenser Pressure",
             unique_id_suffix="ou_condenser_pressure",
             data_path=("system_check", "megmet_status", "condenser_pressure"),
             icon="mdi:thermometer-lines",
@@ -167,14 +150,12 @@ async def async_setup_entry(
         ),
         # Fans
         AiraRotationSpeedSensor(coordinator, entry,
-            name="OU Fan 1 Speed",
             unique_id_suffix="ou_fan_1_speed",
             data_path=("system_check", "megmet_status", "dc_fan1_running_speed"),
             icon="mdi:fan",
             enabled_by_default=False
         ),
         AiraRotationSpeedSensor(coordinator, entry,
-            name="OU Fan 2 Speed",
             unique_id_suffix="ou_fan_2_speed",
             data_path=("system_check", "megmet_status", "dc_fan1_running_speed"),
             icon="mdi:fan",
@@ -182,28 +163,24 @@ async def async_setup_entry(
         ),
         # Compressor
         AiraFrequencySensor(coordinator, entry,
-            name="OU Compressor Speed",
             unique_id_suffix="ou_compressor_speed",
             data_path=("system_check", "megmet_status", "compressor_running_speed"),
             icon="mdi:engine",
             enabled_by_default=False
         ),
         AiraFrequencySensor(coordinator, entry,
-            name="OU Compressor Frequency Limit",
             unique_id_suffix="ou_compressor_freq_limit",
             data_path=("system_check", "megmet_status", "compressor_frequency_limit"),
             icon="mdi:engine",
             enabled_by_default=False
         ),
         AiraPercentageSensor(coordinator, entry,
-            name="OU Compressor Need Percent",
             unique_id_suffix="ou_compressor_need",
             data_path=("system_check", "megmet_status", "compressor_need_percent_calculated"),
             icon="mdi:engine",
             enabled_by_default=False
         ),
         AiraPercentageSensor(coordinator, entry,
-            name="OU Compressor Limit Percent",
             unique_id_suffix="ou_compressor_limit",
             data_path=("system_check", "megmet_status", "compressor_limit_percent_calculated"),
             icon="mdi:engine",
@@ -213,7 +190,6 @@ async def async_setup_entry(
         AiraEEVStepSensor(coordinator, entry),
         # === POWER SENSORS ===
         AiraPowerSensor(coordinator, entry,
-            name="Instant Power Consumption (kW)",
             unique_id_suffix="instant_power_kw",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
@@ -221,7 +197,6 @@ async def async_setup_entry(
             icon="mdi:lightning-bolt"
         ),
         AiraPowerSensor(coordinator, entry,
-            name="Instant Power Consumption (W)",
             unique_id_suffix="instant_power_w",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
@@ -230,7 +205,6 @@ async def async_setup_entry(
             enabled_by_default=False
         ),
         AiraPowerSensor(coordinator, entry,
-            name="DHW Instant Power Consumption (kW)",
             unique_id_suffix="dhw_instant_power_kw",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
@@ -239,7 +213,6 @@ async def async_setup_entry(
             allowed_status=["PUMP_ACTIVE_STATE_DHW", "PUMP_ACTIVE_STATE_ANTI_LEGIONELLA"]
         ),
         AiraPowerSensor(coordinator, entry,
-            name="DHW Instant Power Consumption (W)",
             unique_id_suffix="dhw_instant_power_w",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
@@ -249,7 +222,6 @@ async def async_setup_entry(
             enabled_by_default=False
         ),
         AiraPowerSensor(coordinator, entry,
-            name="H/C Instant Power Consumption (kW)",
             unique_id_suffix="hc_instant_power_kw",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
@@ -258,7 +230,6 @@ async def async_setup_entry(
             allowed_status=["PUMP_ACTIVE_STATE_HEATING", "PUMP_ACTIVE_STATE_COOLING", "PUMP_ACTIVE_STATE_DEFROSTING"]
         ),
         AiraPowerSensor(coordinator, entry,
-            name="H/C Instant Power Consumption (W)",
             unique_id_suffix="hc_instant_power_w",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
@@ -276,7 +247,6 @@ async def async_setup_entry(
         ),
         # === ENERGY SENSORS ===
         AiraEnergySensor(coordinator, entry,
-            name="Total Electricity Consumption (kWh)",
             unique_id_suffix="electricity_kwh",
             data_path=("system_check", "energy_calculation", "electrical_energy_cum_wh"),
             icon="mdi:transmission-tower",
@@ -284,7 +254,6 @@ async def async_setup_entry(
             original_unit=UnitOfEnergy.WATT_HOUR,
         ),
         AiraEnergySensor(coordinator, entry,
-            name="Total Electricity Consumption (Wh)",
             unique_id_suffix="electricity_wh",
             data_path=("system_check", "energy_calculation", "electrical_energy_cum_wh"),
             icon="mdi:transmission-tower",
@@ -293,7 +262,6 @@ async def async_setup_entry(
             enabled_by_default=False
         ),
         AiraEnergySensor(coordinator, entry,
-            name="Total Heat Produced (kWh)",
             unique_id_suffix="heat_kwh",
             data_path=("system_check", "energy_calculation", "water_energy_cum_wh"),
             icon="mdi:fire",
@@ -302,7 +270,6 @@ async def async_setup_entry(
             state_class=SensorStateClass.TOTAL
         ),
         AiraEnergySensor(coordinator, entry,
-            name="Total Heat Produced (Wh)",
             unique_id_suffix="heat_wh",
             data_path=("system_check", "energy_calculation", "water_energy_cum_wh"),
             icon="mdi:fire",
@@ -318,25 +285,21 @@ async def async_setup_entry(
         AiraDeviceCOPSensor(coordinator, entry),
         # === FLOW SENSORS ===
         AiraFlowRateSensor(coordinator, entry,
-            name="Primary Circuit Flow",
             unique_id_suffix="flow_meter_1",
             data_path=("system_check", "sensor_values", "flow_meter1"),
         ),
         AiraFlowRateSensor(coordinator, entry,
-            name="DHW Tank Inlet Flow",
             unique_id_suffix="flow_meter_2",
             data_path=("system_check", "sensor_values", "flow_meter2"),
         ),
         # === SYSTEM STATUS SENSORS ===
         AiraEnumSensor(coordinator, entry,
-            name="Operating Status",
             unique_id_suffix="operating_status",
             data_path=("state", "operating_status"),
             replace="OPERATING_STATUS_",
             icon="mdi:information-outline"
         ),
         AiraEnumSensor(coordinator, entry,
-            name="HP Active State",
             unique_id_suffix="active_state",
             data_path=("state", "pump_active_state"),
             replace="PUMP_ACTIVE_STATE_",
@@ -345,28 +308,23 @@ async def async_setup_entry(
         AiraLEDPatternSensor(coordinator, entry),
         # === CONNECTION SENSORS ===
         AiraSignalStrengthSensor(coordinator, entry,
-            name="BLE Signal Strength",
             unique_id_suffix="system_rssi",
             data_path=("rssi", )
         ),
     ]
 
     # PER ZONE LOOP
-    num_zone = set()
-    for thermostat in coordinator.data.get("state", {}).get("thermostats", []):
-        if thermostat.get("serial_number") and thermostat.get("zone"):
-            num_zone.add(int(thermostat.get("zone").replace("ZONE_", "")))
+    num_zones = entry.options.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)
+    _LOGGER.debug("Setting up sensors for %d zones based on config entry options", num_zones)
 
-    for i in num_zone:  # zone loop
+    for i in range(1, num_zones + 1):  # zone loop
         sensors.extend([
         AiraTemperatureSensor(coordinator, entry,
-            name=f"Zone {i} Supply Temperature",
             unique_id_suffix=f"zone_{i}_supply_temp",
             data_path=("system_check", "sensor_values", f"indoor_unit_supply_temperature_zone{i}"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name=f"Zone {i} Temperature",
             unique_id_suffix=f"zone_{i}_temp",
             data_path=("state", "thermostats", "last_update", "actual_temperature"),
             icon="mdi:thermometer",
@@ -374,7 +332,6 @@ async def async_setup_entry(
             divide_by_10=True
         ),
         AiraHumiditySensor(coordinator, entry,
-            name=f"Zone {i} Humidity",
             unique_id_suffix=f"zone_{i}_humidity",
             data_path=("state", "thermostats", "last_update", "humidity"),
             icon="mdi:water-percent",
@@ -382,27 +339,23 @@ async def async_setup_entry(
             divide_by_10=True
         ),
         AiraSignalStrengthSensor(coordinator, entry,
-            name=f"Zone {i} Signal Strength",
             unique_id_suffix=f"zone_{i}_rssi",
             data_path=("state", "thermostats", "rssi"),
             index=f"ZONE_{i}"
         ),
         AiraEnumSensor(coordinator, entry,
-            name=f"HP Zone {i} State",
             unique_id_suffix=f"zone_{i}_active_state",
             data_path=("state", "current_pump_mode_state", f"zone{i}"),
             replace="PUMP_MODE_STATE_",
             icon="mdi:heat-pump-outline"
         ),
         AiraPercentageSensor(coordinator, entry,
-            name=f"Zone {i} Valve Position",
             unique_id_suffix=f"zone_{i}_valve_position",
             data_path=("system_check", "valve_status", f"mixing_valve{i}_calculated_position"),
             icon="mdi:valve",
             enabled_by_default=False
         ),
         AiraTemperatureSensor(coordinator, entry,
-            name=f"Zone {i} Calculated Supply Temperature",
             unique_id_suffix=f"zone_{i}_calculated_supply_temp",
             data_path=("system_check", "calculated_setpoints", f"supply_zone{i}"),
             icon="mdi:thermometer-water",
@@ -415,7 +368,6 @@ async def async_setup_entry(
         if "heating" in allowed_pump_mode_state:
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
-                name=f"Zone {i} Heating Target",
                 unique_id_suffix=f"zone_{i}_heat_target",
                 data_path=("state", "zone_setpoints_heating", f"zone{i}"),
                 icon="mdi:sun-thermometer",
@@ -428,7 +380,6 @@ async def async_setup_entry(
         if "cooling" in allowed_pump_mode_state:
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
-                name=f"Zone {i} Cooling Target",
                 unique_id_suffix=f"zone_{i}_cool_target",
                 data_path=("state", "zone_setpoints_cooling", f"zone{i}"),
                 icon="mdi:snowflake-thermometer",
@@ -440,22 +391,21 @@ async def async_setup_entry(
             ])
 
     # PER PHASE LOOP
-    current_phase_2 = coordinator.data.get("system_check", {}).get("energy_calculation", {}).get("current_phase2", 0)
-    current_phase_3 = coordinator.data.get("system_check", {}).get("energy_calculation", {}).get("current_phase3", 0)
-    num_phases = 3
-    if current_phase_2 == 0 and current_phase_3 == 0:
-        num_phases = 1
+    num_phases = entry.options.get(CONF_NUM_PHASES, 0)
+    _LOGGER.debug("Setting up sensors for %d phases based on config entry options", num_phases)
+    if num_phases < 0:
+        _LOGGER.warning("To enable voltage and current sensors configure the number of phases in the integration configuration.", num_phases)
+        num_phases = 0
+
     for i in range(num_phases):
         sensors.extend([
             AiraVoltageSensor(coordinator, entry,
-                name=f"Voltage Phase {i}",
                 unique_id_suffix=f"voltage_phase_{i}",
                 data_path=("system_check", "energy_calculation", f"voltage_phase{i}"),
                 icon="mdi:flash",
                 enabled_by_default=True
             ),
             AiraCurrentSensor(coordinator, entry,
-                name=f"Current Phase {i}",
                 unique_id_suffix=f"current_phase_{i}",
                 data_path=("system_check", "energy_calculation", f"current_phase{i}"),
                 icon="mdi:current-ac",
@@ -481,7 +431,7 @@ async def async_setup_entry(
 # BASE SENSOR CLASS
 # ============================================================================
 
-class AiraSensorBase(CoordinatorEntity, SensorEntity):
+class AiraSensorBase(CoordinatorEntity, SensorEntity): # type: ignore
     """Base class for Aira sensors."""
 
     _attr_has_entity_name = True
@@ -490,11 +440,23 @@ class AiraSensorBase(CoordinatorEntity, SensorEntity):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        unique_id_suffix: str
+        unique_id_suffix: str,
+        icon: str | None = None,
+        entity_category: EntityCategory | None = None,
+        enabled_by_default: bool = True
     ) -> None:
         """Initialise the sensor."""
         super().__init__(coordinator)
         self._device_uuid = entry.data[CONF_DEVICE_UUID]
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+
+        if icon:
+            self._attr_icon = icon
+
+        if entity_category:
+            self._attr_entity_category = entity_category
+
+        self._attr_entity_registry_enabled_default = enabled_by_default
 
         #self.entity_description = SensorEntityDescription(
         #    key=unique_id_suffix,
@@ -510,8 +472,6 @@ class AiraSensorBase(CoordinatorEntity, SensorEntity):
             "manufacturer": "Aira",
             "model": "Heat Pump",
         })
-
-    # TODO check if AVAIABLE property is needed
 
 # ============================================================================
 # TEMPERATURE SENSORS
@@ -529,27 +489,24 @@ class AiraTemperatureSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:thermometer",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
         divide_by_10: bool = False,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        #self._attr_name = name # TODO
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
         self._divide_by_10 = divide_by_10
+
         # if string: ZONE_1 or ZONE_2
         # if int: 1 or 2
         self._index = index
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -557,7 +514,7 @@ class AiraTemperatureSensor(AiraSensorBase):
             value = self.coordinator.data
             try:
                 for path in self._data_path:
-                    value = value[path]
+                    value = value[path] # type: ignore # Ignore since the try catch will handle any issues with missing keys or wrong types
                     if self._index is not None and isinstance(value, list):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
@@ -568,8 +525,10 @@ class AiraTemperatureSensor(AiraSensorBase):
                             value = value[self._index - 1]  # Adjust for 0-based index
 
                 if self._divide_by_10:
-                    return round(float(value) / 10, 2) # Round to 1 decimal place
-                return round(float(value), 2) # Round to 1 decimal place
+                    # Round to 1 decimal place
+                    return round(float(value) / 10, 2) # type: ignore
+                # Round to 1 decimal place
+                return round(float(value), 2) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -581,16 +540,14 @@ class AiraScheduledTemperatureSensor(AiraSensorBase):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-    _attr_icon = "mdi:thermometer-water"
     _attr_suggested_display_precision = 2
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         unique_id_suffix = "scheduled_temp"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:thermometer-water")
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore # TODO add night cooldown calculation
         try:
             value = None
             states = self.coordinator.data.get('state', {})
@@ -632,27 +589,23 @@ class AiraHumiditySensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:water-percent",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
         divide_by_10: bool = False,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
         self._divide_by_10 = divide_by_10
         # if string: ZONE_1 or ZONE_2
         # if int: 1 or 2
         self._index = index
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -660,7 +613,7 @@ class AiraHumiditySensor(AiraSensorBase):
             value = self.coordinator.data
             try:
                 for path in self._data_path:
-                    value = value[path]
+                    value = value[path] # type: ignore
                     if self._index is not None and isinstance(value, list):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
@@ -671,8 +624,10 @@ class AiraHumiditySensor(AiraSensorBase):
                             value = value[self._index - 1]  # Adjust for 0-based index
 
                 if self._divide_by_10:
-                    return round(float(value) / 10, 1) # Round to 1 decimal place
-                return round(float(value), 1) # Round to 1 decimal place
+                    # Round to 1 decimal place
+                    return round(float(value) / 10, 1) # type: ignore
+                # Round to 1 decimal place
+                return round(float(value), 1) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -692,24 +647,21 @@ class AiraSignalStrengthSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
         index: int | str | None = None
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, None, entity_category, enabled_by_default)
         self._data_path = data_path
 
         # if string: ZONE_1 or ZONE_2
         # if int: 1 or 2
         self._index = index
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -717,7 +669,7 @@ class AiraSignalStrengthSensor(AiraSensorBase):
             value = self.coordinator.data
             try:
                 for path in self._data_path:
-                    value = value[path]
+                    value = value[path] # type: ignore
                     if self._index is not None and isinstance(value, list):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
@@ -727,13 +679,13 @@ class AiraSignalStrengthSensor(AiraSensorBase):
                         if isinstance(self._index, int) and len(value) >= self._index:
                             value = value[self._index - 1]  # Adjust for 0-based index
 
-                return int(value)
+                return int(value) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
     
     @property
-    def icon(self) -> str:
+    def icon(self) -> str: # type: ignore
         """Return the icon based on signal strength."""
         value = self.native_value
         if value is None:
@@ -763,21 +715,17 @@ class AiraVoltageSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:flash",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -786,8 +734,8 @@ class AiraVoltageSensor(AiraSensorBase):
             try:
                 for path in self._data_path:
                     value = value[path]
-
-                return round(float(value), 2) # Round to 1 decimal place
+                # Round to 1 decimal place
+                return round(float(value), 2) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -804,21 +752,17 @@ class AiraCurrentSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:current-ac",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -827,8 +771,8 @@ class AiraCurrentSensor(AiraSensorBase):
             try:
                 for path in self._data_path:
                     value = value[path]
-
-                return round(float(value), 2) # Round to 1 decimal place
+                # Round to 1 decimal place
+                return round(float(value), 2) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -848,27 +792,23 @@ class AiraPowerSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:lightning-bolt",
+        entity_category: EntityCategory | None = None,
         unit_of_measurement: str = UnitOfPower.KILO_WATT,
         original_unit: str = UnitOfPower.WATT,
         enabled_by_default: bool = True,
         allowed_status: list[str] | None = None
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._original_unit = original_unit
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
         self._allowed_status = allowed_status
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -882,11 +822,13 @@ class AiraPowerSensor(AiraSensorBase):
                     value = value[path]
 
                 if self._original_unit == UnitOfPower.WATT and self._attr_native_unit_of_measurement == UnitOfPower.KILO_WATT:
-                    return round(float(value) / 1000, 3)  # Convert W to kW
+                    # Convert W to kW
+                    return round(float(value) / 1000, 3) # type: ignore
                 elif self._original_unit == UnitOfPower.KILO_WATT and self._attr_native_unit_of_measurement == UnitOfPower.WATT:
-                    return round(float(value) * 1000, 3)  # Convert kW to W
+                    # Convert kW to W
+                    return round(float(value) * 1000, 3) # type: ignore
                 else:
-                    return round(float(value), 3)
+                    return round(float(value), 3) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -905,27 +847,23 @@ class AiraEnergySensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:transmission-tower",
+        entity_category: EntityCategory | None = None,
         unit_of_measurement: str = UnitOfEnergy.KILO_WATT_HOUR,
         original_unit: str = UnitOfEnergy.WATT_HOUR,
         enabled_by_default: bool = True,
         state_class=SensorStateClass.TOTAL_INCREASING
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._attr_native_unit_of_measurement = unit_of_measurement
         self._original_unit = original_unit
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
         self._attr_state_class = state_class
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -936,11 +874,13 @@ class AiraEnergySensor(AiraSensorBase):
                     value = value[path]
                 # Convert to kWh if original unit is Wh
                 if self._original_unit == UnitOfEnergy.WATT_HOUR and self._attr_native_unit_of_measurement == UnitOfEnergy.KILO_WATT_HOUR:
-                    return round(float(value) / 1000, 3)  # Convert Wh to kWh
+                    # Convert Wh to kWh
+                    return round(float(value) / 1000, 3) # type: ignore
                 elif self._original_unit == UnitOfEnergy.KILO_WATT_HOUR and self._attr_native_unit_of_measurement == UnitOfEnergy.WATT_HOUR:
-                    return round(float(value) * 1000, 3)  # Convert kWh to Wh
+                    # Convert kWh to Wh
+                    return round(float(value) * 1000, 3) # type: ignore
                 else:
-                    return round(float(value), 3)
+                    return round(float(value), 3) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -952,28 +892,23 @@ class AiraEnergySensor(AiraSensorBase):
 class AiraInstantHeatSensor(AiraSensorBase):
     """Thermal power output sensor. Calculated using https://docs.openenergymonitor.org/heatpumps/basics.html#mass-flow-rate-heat-transfer"""
 
-
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
-    _attr_icon = "mdi:fire"
     _attr_suggested_display_precision = 3
 
     def __init__(
-            self,
-            coordinator: AiraDataUpdateCoordinator,
-            entry: ConfigEntry, unit_of_measurement: str = UnitOfPower.WATT,
-            enabled_by_default: bool = True,
-            ) -> None:
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry, unit_of_measurement: str = UnitOfPower.WATT,
+        enabled_by_default: bool = True,
+    ) -> None:
         unique_id_suffix = f"instant_heat_{unit_of_measurement.lower()}"        
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = f"Instant Heat Production ({unit_of_measurement.lower().replace('w', 'W')})"
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:fire", None, enabled_by_default)
         self._attr_native_unit_of_measurement = unit_of_measurement
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         # heat output (W) = specific heat (J/kg.K) x flow rate (kg/s) x DT (K)
         # heat output (W) = 4200 J/kg.K x 0.25 kg/s x 5K = 5250 W
@@ -1004,21 +939,17 @@ class AiraPressureSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:thermometer-lines",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1027,8 +958,8 @@ class AiraPressureSensor(AiraSensorBase):
             try:
                 for path in self._data_path:
                     value = value[path]
-
-                return round(float(value), 2) # Round to 1 decimal places
+                # Round to 1 decimal places
+                return round(float(value), 2) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -1048,21 +979,17 @@ class AiraRotationSpeedSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:rotate-right",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1072,7 +999,7 @@ class AiraRotationSpeedSensor(AiraSensorBase):
                 for path in self._data_path:
                     value = value[path]
 
-                return int(value)
+                return int(value) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -1086,16 +1013,14 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
 
     _attr_name = "Energy Balance"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:scale-balance"
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "energy_balance"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:scale-balance")
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         """Return the state."""
         try:
             energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
@@ -1119,19 +1044,16 @@ class AiraFlowRateSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, None, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1140,14 +1062,14 @@ class AiraFlowRateSensor(AiraSensorBase):
             try:
                 for path in self._data_path:
                     value = value[path]
-
-                return round(float(value), 2) # Round to 1 decimal places
+                # Round to 1 decimal places
+                return round(float(value), 2) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return 0
         return None
 
     @property
-    def icon(self) -> str:
+    def icon(self) -> str: # type: ignore
         """Return the icon based on flow rate."""
         value = self.native_value
         if value is None or value == 0:
@@ -1169,21 +1091,17 @@ class AiraFrequencySensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         icon: str = "mdi:sine-wave",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_entity_registry_enabled_default = enabled_by_default
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1193,7 +1111,7 @@ class AiraFrequencySensor(AiraSensorBase):
                 for path in self._data_path:
                     value = value[path]
 
-                return int(value)
+                return int(value) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -1209,24 +1127,20 @@ class AiraPercentageSensor(AiraSensorBase):
     _attr_native_unit_of_measurement = PERCENTAGE
 
     def __init__(
-            self,
-            coordinator: AiraDataUpdateCoordinator,
-            entry: ConfigEntry,
-            name: str,
-            unique_id_suffix: str,
-            data_path: tuple[str, ...],
-            icon: str = "mdi:percent",
-            enabled_by_default: bool = True,
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+        unique_id_suffix: str,
+        data_path: tuple[str, ...],
+        icon: str = "mdi:percent",
+        entity_category: EntityCategory | None = None,
+        enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
-        self._attr_icon = icon
-        self._attr_entity_registry_enabled_default = enabled_by_default
     
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1236,7 +1150,7 @@ class AiraPercentageSensor(AiraSensorBase):
                 for path in self._data_path:
                     value = value[path]
 
-                return int(value)
+                return int(value) # type: ignore
             except (KeyError, ValueError, TypeError):
                 return None
         return None
@@ -1250,23 +1164,20 @@ class AiraEEVStepSensor(AiraSensorBase):
 
     _attr_name = "Electronic Expansion Valve Step"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:valve"
-    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "eev_step"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:valve", None, False)
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | None: # type: ignore
         """Return the state."""
         outdoor_unit = self.coordinator.data["system_check"].get("megmet_status", {})
-        return outdoor_unit.get("eev_step")
+        return outdoor_unit.get("eev_step", None)
 
 # ============================================================================
-# ENUM SENSORS
+# ENUM / STRING SENSORS
 # ============================================================================
 
 class AiraEnumSensor(AiraSensorBase):
@@ -1279,23 +1190,19 @@ class AiraEnumSensor(AiraSensorBase):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
-        name: str,
         unique_id_suffix: str,
         data_path: tuple[str, ...],
         replace: str,
         icon: str = "mdi:information-outline",
+        entity_category: EntityCategory | None = None,
         enabled_by_default: bool = True,
     ) -> None:
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = name
-        self._attr_icon = icon
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
         self._data_path = data_path
         self._replace = replace
-        self._attr_entity_registry_enabled_default = enabled_by_default
     
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> str | None: # type: ignore
         if not self.coordinator.data:
             return None
 
@@ -1310,6 +1217,41 @@ class AiraEnumSensor(AiraSensorBase):
                 return None
         return None
 
+class AiraStringSensor(AiraSensorBase):
+    """Base class for all string sensors."""
+
+    _attr_device_class = None
+    _attr_state_class = None
+
+    def __init__(
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+        unique_id_suffix: str,
+        data_path: tuple[str, ...],
+        icon: str = "mdi:information-outline",
+        entity_category: EntityCategory | None = None,
+        enabled_by_default: bool = True,
+    ) -> None:
+        super().__init__(coordinator, entry, unique_id_suffix, icon, entity_category, enabled_by_default)
+        self._data_path = data_path
+    
+    @property
+    def native_value(self) -> str | None: # type: ignore
+        if not self.coordinator.data:
+            return None
+
+        if self._data_path:
+            value = self.coordinator.data
+            try:
+                for path in self._data_path:
+                    value = value[path]
+
+                return value # type: ignore
+            except (KeyError, ValueError, TypeError):
+                return None
+        return None
+
 # ============================================================================
 # LED STATUS SENSORS
 # ============================================================================
@@ -1317,19 +1259,16 @@ class AiraEnumSensor(AiraSensorBase):
 class AiraLEDPatternSensor(AiraSensorBase):
     """LED pattern sensor."""
 
-    _attr_name = "LED Pattern"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_state_class = None
-    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "led_pattern"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, None, None, False)
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> str | None: # type: ignore
         """Return the state."""
         try:
             pattern = self.coordinator.data["state"].get("led_pattern", "")
@@ -1338,7 +1277,7 @@ class AiraLEDPatternSensor(AiraSensorBase):
                 return None
 
     @property
-    def icon(self) -> str:
+    def icon(self) -> str: # type: ignore
         """Return the icon based on LED pattern."""
         if not self.native_value:
             _LOGGER.debug("LED pattern sensor native_value is None")
@@ -1381,20 +1320,17 @@ class AiraLEDPatternSensor(AiraSensorBase):
 class AiraInstantCOPSensor(AiraSensorBase):
     """Instant COP sensor."""
 
-    _attr_name = "Instant COP"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = None
     _attr_suggested_display_precision = 2
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "instant_cop"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:gauge", None)
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
             flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
@@ -1413,20 +1349,17 @@ class AiraInstantCOPSensor(AiraSensorBase):
 class AiraCumulativeCOPSensor(AiraSensorBase):
     """Cumulative COP sensor."""
 
-    _attr_name = "Cumulative COP"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = None
     _attr_suggested_display_precision = 2
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "cumulative_cop"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:gauge", None)
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
             energy_calc = self.coordinator.data["system_check"]["energy_calculation"]
@@ -1442,20 +1375,17 @@ class AiraCumulativeCOPSensor(AiraSensorBase):
 class AiraDeviceCOPSensor(AiraSensorBase):
     """Device-reported COP sensor (real-time from heat pump)."""
 
-    _attr_name = "Heatpump Reported COP"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:gauge"
     _attr_native_unit_of_measurement = None
     _attr_suggested_display_precision = 2
 
     def __init__(self, coordinator: AiraDataUpdateCoordinator, entry: ConfigEntry) -> None:
         """Initialise the sensor."""
         unique_id_suffix = "reported_cop"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:gauge", None)
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
             energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
@@ -1477,21 +1407,19 @@ class AiraCurveSensor(AiraSensorBase):
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_icon = "mdi:chart-line"  
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_suggested_display_precision = 2
 
     def __init__(
-            self,
-            coordinator: AiraDataUpdateCoordinator,
-            entry: ConfigEntry,
-            zone: int,
-            heating: bool = True
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+        zone: int,
+        heating: bool = True
     ) -> None:
         unique_id_suffix = f"zone_{zone}_{'heating' if heating else 'cooling'}_curve"
-        super().__init__(coordinator, entry, unique_id_suffix)
-        self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
-        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        super().__init__(coordinator, entry, unique_id_suffix, "mdi:chart-line", None)
+        #self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
         self._zone = zone
         self._heating = heating
 
@@ -1501,7 +1429,7 @@ class AiraCurveSensor(AiraSensorBase):
             self._curve_key = f"cool_curves"
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         if not self.coordinator.data:
             return None
@@ -1533,7 +1461,7 @@ class AiraCurveSensor(AiraSensorBase):
             return None
         
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
+    def extra_state_attributes(self) -> dict[str, Any]: # type: ignore
         """Return the state attributes."""
         if not self.coordinator.data:
             return {"ambient": [], "supply": []}

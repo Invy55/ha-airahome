@@ -17,6 +17,7 @@ CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SHORT_NAME = "Aira HP"
 DEFAULT_NAME = "Aira Heat Pump"
 DEFAULT_SCAN_INTERVAL = 30  # seconds - coordinator waits for completion before next cycle
+DEFAULT_NUM_ZONES = 1
 STALE_DATA_THRESHOLD = 600  # seconds (10 minutes) - keep old data if fresher than this
 
 # BLE connection timeouts (increased for poor connectivity scenarios)

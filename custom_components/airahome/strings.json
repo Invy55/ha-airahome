@@ -57,7 +57,8 @@
           "scan_interval": "Update Interval (seconds)",
           "num_zones": "Number of Zones (1 or 2)",
           "num_phases": "Number of Phases (1 or 3)"
-        }
+        },
+        "data_description": {}
       }
     }
   },
