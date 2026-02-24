@@ -369,7 +369,7 @@ async def async_setup_entry(
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix=f"zone_{i}_calculated_supply_temp",
-            data_path=("system_check_state", "calculated_setpoints", f"supply_ zone_{i}"),
+            data_path=("system_check_state", "calculated_setpoints", f"supply_zone_{i}"),
             icon="mdi:thermometer-water",
             entity_category=EntityCategory.DIAGNOSTIC
         )
@@ -381,7 +381,7 @@ async def async_setup_entry(
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_heat_target",
-                data_path=("state", "zone_setpoints_heating", f" zone_{i}"),
+                data_path=("state", "zone_setpoints_heating", f"zone_{i}"),
                 icon="mdi:sun-thermometer",
             ),
             AiraCurveSensor(coordinator, entry,
@@ -393,7 +393,7 @@ async def async_setup_entry(
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_cool_target",
-                data_path=("state", "zone_setpoints_cooling", f" zone_{i}"),
+                data_path=("state", "zone_setpoints_cooling", f"zone_{i}"),
                 icon="mdi:snowflake-thermometer",
             ),
             AiraCurveSensor(coordinator, entry,
@@ -1429,7 +1429,6 @@ class AiraCurveSensor(AiraSensorBase):
     ) -> None:
         unique_id_suffix = f"zone_{zone}_{'heating' if heating else 'cooling'}_curve"
         super().__init__(coordinator, entry, unique_id_suffix, "mdi:chart-line", None)
-        #self._attr_name = f"Zone {zone} {'Heating' if heating else 'Cooling'} Curve"
         self._zone = zone
         self._heating = heating
 
@@ -1477,7 +1476,7 @@ class AiraCurveSensor(AiraSensorBase):
             return {"ambient": [], "supply": []}
     
         try:
-            curves = self.coordinator.data["state"][self._curve_key][f" zone_{self._zone}"]
+            curves = self.coordinator.data["state"][self._curve_key][f"zone_{self._zone}"]
             output = {
                 "ambient": [],
                 "supply": []
