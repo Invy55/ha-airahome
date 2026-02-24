@@ -149,7 +149,25 @@
       "zone_2_heat_target": { "name": "Zone 2 Heating Target" },
       "zone_2_cool_target": { "name": "Zone 2 Cooling Target" },
       "zone_2_heating_curve": { "name": "Zone 2 Heating Curve" },
-      "zone_2_cooling_curve": { "name": "Zone 2 Cooling Curve" }
+      "zone_2_cooling_curve": { "name": "Zone 2 Cooling Curve" },
+      "software_version": { "name": "Software Version" },
+      "ou_software_version": { "name": "Outdoor Software Version" },
+      "platform_version": { "name": "Platform Version" }
+    },
+    "binary_sensor": {
+      "connection": { "name": "Connection Status" },
+      "manual_mode": { "name": "Manual Mode" },
+      "night_mode": { "name": "Night Mode" },
+      "away_mode": { "name": "Away Mode" },
+      "inline_heater": { "name": "Inline Heater" },
+      "dhw_heating": { "name": "DHW Heating" },
+      "defrosting": { "name": "Defrosting" },
+      "ou_pump": { "name": "OU Primary Circulator" },
+      "alarms": { "name": "Alarms" },
+      "zone_1_circulator": { "name": "Zone 1 Circulator" },
+      "zone_2_circulator": { "name": "Zone 2 Circulator" },
+      "thermostat_1_low_battery": { "name": "Thermostat 1 Low Battery" },
+      "thermostat_2_low_battery": { "name": "Thermostat 2 Low Battery" }
     }
   },
   "device_type": {
@@ -164,7 +182,7 @@
     "2": "Bi Zone"
   },
   "phases": {
-    "0": "Unknown",
+    "0": "Unknown (Do NOT select)",
     "1": "Single Phase",
     "3": "Three Phase"
   }

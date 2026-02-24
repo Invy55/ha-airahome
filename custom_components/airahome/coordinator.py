@@ -98,7 +98,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
 
         result = {
             "state": state_dict,
-            "system_check": system_dict,
+            "system_check_state": system_dict,
             "connected": True,
             "rssi": rssi,
         }

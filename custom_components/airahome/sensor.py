@@ -60,145 +60,141 @@ async def async_setup_entry(
         AiraScheduledTemperatureSensor(coordinator, entry),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="outdoor_temp",
-            data_path=("system_check", "sensor_values", "outdoor_unit_ambient_temperature"),
+            data_path=("system_check_state", "sensor_values", "outdoor_unit_ambient_temperature"),
             icon="mdi:thermometer"
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="indoor_supply_temp",
-            data_path=("system_check", "sensor_values", "indoor_unit_supply_temperature"),
+            data_path=("system_check_state", "sensor_values", "indoor_unit_supply_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="calculated_supply_temp",
-            data_path=("system_check", "calculated_setpoints", "supply"),
+            data_path=("system_check_state", "calculated_setpoints", "supply"),
             icon="mdi:thermometer-water",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         # === OUTDOOR UNIT SENSORS ===
         # Temperatures
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="ou_supply_temp",
-            data_path=("system_check", "sensor_values", "outdoor_unit_supply_temperature"),
+            data_path=("system_check_state", "sensor_values", "outdoor_unit_supply_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="ou_return_temp",
-            data_path=("system_check", "sensor_values", "outdoor_unit_return_temperature"),
+            data_path=("system_check_state", "sensor_values", "outdoor_unit_return_temperature"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="evaporator_coil_temp",
-            data_path=("system_check", "megmet_status", "evaporator_coil_temperature"),
+            data_path=("system_check_state", "megmet_status", "evaporator_coil_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="gas_discharge_temp",
-            data_path=("system_check", "megmet_status", "gas_discharge_temperature"),
+            data_path=("system_check_state", "megmet_status", "gas_discharge_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="gas_return_temp",
-            data_path=("system_check", "megmet_status", "gas_return_temperature"),
+            data_path=("system_check_state", "megmet_status", "gas_return_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="condensing_temp",
-            data_path=("system_check", "megmet_status", "condensing_temperature"),
+            data_path=("system_check_state", "megmet_status", "condensing_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="evaporating_temp",
-            data_path=("system_check", "megmet_status", "evaporating_temperature"),
+            data_path=("system_check_state", "megmet_status", "evaporating_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix="inner_coil_temp",
-            data_path=("system_check", "megmet_status", "inner_coil_temperature"),
+            data_path=("system_check_state", "megmet_status", "inner_coil_temperature"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         # Electrical
         AiraVoltageSensor(coordinator, entry,
             unique_id_suffix="ou_voltage",
-            data_path=("system_check", "megmet_status", "ac_input_voltage"),
+            data_path=("system_check_state", "megmet_status", "ac_input_voltage"),
             icon="mdi:flash",
-            enabled_by_default=False
         ),
         AiraCurrentSensor(coordinator, entry,
             unique_id_suffix="ou_current",
-            data_path=("system_check", "megmet_status", "ac_input_current"),
+            data_path=("system_check_state", "megmet_status", "ac_input_current"),
             icon="mdi:current-ac",
-            enabled_by_default=False
         ),
         # Pressures
         AiraPressureSensor(coordinator, entry,
             unique_id_suffix="ou_evaporator_pressure",
-            data_path=("system_check", "megmet_status", "evaporator_pressure"),
+            data_path=("system_check_state", "megmet_status", "evaporator_pressure"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraPressureSensor(coordinator, entry,
             unique_id_suffix="ou_condenser_pressure",
-            data_path=("system_check", "megmet_status", "condenser_pressure"),
+            data_path=("system_check_state", "megmet_status", "condenser_pressure"),
             icon="mdi:thermometer-lines",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         # Fans
         AiraRotationSpeedSensor(coordinator, entry,
             unique_id_suffix="ou_fan_1_speed",
-            data_path=("system_check", "megmet_status", "dc_fan1_running_speed"),
+            data_path=("system_check_state", "megmet_status", "dc_fan1_running_speed"),
             icon="mdi:fan",
-            enabled_by_default=False
         ),
         AiraRotationSpeedSensor(coordinator, entry,
             unique_id_suffix="ou_fan_2_speed",
-            data_path=("system_check", "megmet_status", "dc_fan1_running_speed"),
+            data_path=("system_check_state", "megmet_status", "dc_fan1_running_speed"),
             icon="mdi:fan",
-            enabled_by_default=False
         ),
         # Compressor
         AiraFrequencySensor(coordinator, entry,
             unique_id_suffix="ou_compressor_speed",
-            data_path=("system_check", "megmet_status", "compressor_running_speed"),
+            data_path=("system_check_state", "megmet_status", "compressor_running_speed"),
             icon="mdi:engine",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraFrequencySensor(coordinator, entry,
             unique_id_suffix="ou_compressor_freq_limit",
-            data_path=("system_check", "megmet_status", "compressor_frequency_limit"),
+            data_path=("system_check_state", "megmet_status", "compressor_frequency_limit"),
             icon="mdi:engine",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraPercentageSensor(coordinator, entry,
             unique_id_suffix="ou_compressor_need",
-            data_path=("system_check", "megmet_status", "compressor_need_percent_calculated"),
+            data_path=("system_check_state", "megmet_status", "compressor_need_percent_calculated"),
             icon="mdi:engine",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraPercentageSensor(coordinator, entry,
             unique_id_suffix="ou_compressor_limit",
-            data_path=("system_check", "megmet_status", "compressor_limit_percent_calculated"),
+            data_path=("system_check_state", "megmet_status", "compressor_limit_percent_calculated"),
             icon="mdi:engine",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         # Electronic Expansion Valve
         AiraEEVStepSensor(coordinator, entry),
         # === POWER SENSORS ===
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="instant_power_kw",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt"
         ),
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="instant_power_w",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt",
@@ -206,7 +202,7 @@ async def async_setup_entry(
         ),
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="dhw_instant_power_kw",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt",
@@ -214,7 +210,7 @@ async def async_setup_entry(
         ),
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="dhw_instant_power_w",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt",
@@ -223,7 +219,7 @@ async def async_setup_entry(
         ),
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="hc_instant_power_kw",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.KILO_WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt",
@@ -231,7 +227,7 @@ async def async_setup_entry(
         ),
         AiraPowerSensor(coordinator, entry,
             unique_id_suffix="hc_instant_power_w",
-            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+            data_path=("system_check_state", "energy_calculation", "current_electrical_power_w"),
             unit_of_measurement=UnitOfPower.WATT,
             original_unit=UnitOfPower.WATT,
             icon="mdi:lightning-bolt",
@@ -248,14 +244,14 @@ async def async_setup_entry(
         # === ENERGY SENSORS ===
         AiraEnergySensor(coordinator, entry,
             unique_id_suffix="electricity_kwh",
-            data_path=("system_check", "energy_calculation", "electrical_energy_cum_wh"),
+            data_path=("system_check_state", "energy_calculation", "electrical_energy_cum_wh"),
             icon="mdi:transmission-tower",
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
         ),
         AiraEnergySensor(coordinator, entry,
             unique_id_suffix="electricity_wh",
-            data_path=("system_check", "energy_calculation", "electrical_energy_cum_wh"),
+            data_path=("system_check_state", "energy_calculation", "electrical_energy_cum_wh"),
             icon="mdi:transmission-tower",
             unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
@@ -263,7 +259,7 @@ async def async_setup_entry(
         ),
         AiraEnergySensor(coordinator, entry,
             unique_id_suffix="heat_kwh",
-            data_path=("system_check", "energy_calculation", "water_energy_cum_wh"),
+            data_path=("system_check_state", "energy_calculation", "water_energy_cum_wh"),
             icon="mdi:fire",
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
@@ -271,7 +267,7 @@ async def async_setup_entry(
         ),
         AiraEnergySensor(coordinator, entry,
             unique_id_suffix="heat_wh",
-            data_path=("system_check", "energy_calculation", "water_energy_cum_wh"),
+            data_path=("system_check_state", "energy_calculation", "water_energy_cum_wh"),
             icon="mdi:fire",
             unit_of_measurement=UnitOfEnergy.WATT_HOUR,
             original_unit=UnitOfEnergy.WATT_HOUR,
@@ -286,11 +282,11 @@ async def async_setup_entry(
         # === FLOW SENSORS ===
         AiraFlowRateSensor(coordinator, entry,
             unique_id_suffix="flow_meter_1",
-            data_path=("system_check", "sensor_values", "flow_meter1"),
+            data_path=("system_check_state", "sensor_values", "flow_meter_1"),
         ),
         AiraFlowRateSensor(coordinator, entry,
             unique_id_suffix="flow_meter_2",
-            data_path=("system_check", "sensor_values", "flow_meter2"),
+            data_path=("system_check_state", "sensor_values", "flow_meter_2"),
         ),
         # === SYSTEM STATUS SENSORS ===
         AiraEnumSensor(coordinator, entry,
@@ -311,6 +307,22 @@ async def async_setup_entry(
             unique_id_suffix="system_rssi",
             data_path=("rssi", )
         ),
+        # === VERSION SENSORS ===
+        AiraStringSensor(coordinator, entry,
+            unique_id_suffix="software_version",
+            data_path=("state", "versions", "connectivity_manager"),
+            entity_category=EntityCategory.DIAGNOSTIC
+        ),
+        AiraStringSensor(coordinator, entry,
+            unique_id_suffix="ou_software_version",
+            data_path=("state", "versions", "outdoor_unit_application"),
+            entity_category=EntityCategory.DIAGNOSTIC
+        ),
+        AiraStringSensor(coordinator, entry,
+            unique_id_suffix="platform_version",
+            data_path=("state", "versions", "linux_build_id"),
+            entity_category=EntityCategory.DIAGNOSTIC
+        )
     ]
 
     # PER ZONE LOOP
@@ -321,7 +333,7 @@ async def async_setup_entry(
         sensors.extend([
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix=f"zone_{i}_supply_temp",
-            data_path=("system_check", "sensor_values", f"indoor_unit_supply_temperature_zone{i}"),
+            data_path=("system_check_state", "sensor_values", f"indoor_unit_supply_temperature_zone_{i}"),
             icon="mdi:thermometer-water"
         ),
         AiraTemperatureSensor(coordinator, entry,
@@ -345,21 +357,21 @@ async def async_setup_entry(
         ),
         AiraEnumSensor(coordinator, entry,
             unique_id_suffix=f"zone_{i}_active_state",
-            data_path=("state", "current_pump_mode_state", f"zone{i}"),
+            data_path=("state", "current_pump_mode_state", f"zone_{i}"),
             replace="PUMP_MODE_STATE_",
             icon="mdi:heat-pump-outline"
         ),
         AiraPercentageSensor(coordinator, entry,
             unique_id_suffix=f"zone_{i}_valve_position",
-            data_path=("system_check", "valve_status", f"mixing_valve{i}_calculated_position"),
+            data_path=("system_check_state", "valve_status", f"mixing_valve{i}_calculated_position"),
             icon="mdi:valve",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         ),
         AiraTemperatureSensor(coordinator, entry,
             unique_id_suffix=f"zone_{i}_calculated_supply_temp",
-            data_path=("system_check", "calculated_setpoints", f"supply_zone{i}"),
+            data_path=("system_check_state", "calculated_setpoints", f"supply_ zone_{i}"),
             icon="mdi:thermometer-water",
-            enabled_by_default=False
+            entity_category=EntityCategory.DIAGNOSTIC
         )
         ])
 
@@ -369,7 +381,7 @@ async def async_setup_entry(
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_heat_target",
-                data_path=("state", "zone_setpoints_heating", f"zone{i}"),
+                data_path=("state", "zone_setpoints_heating", f" zone_{i}"),
                 icon="mdi:sun-thermometer",
             ),
             AiraCurveSensor(coordinator, entry,
@@ -381,7 +393,7 @@ async def async_setup_entry(
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_cool_target",
-                data_path=("state", "zone_setpoints_cooling", f"zone{i}"),
+                data_path=("state", "zone_setpoints_cooling", f" zone_{i}"),
                 icon="mdi:snowflake-thermometer",
             ),
             AiraCurveSensor(coordinator, entry,
@@ -401,15 +413,13 @@ async def async_setup_entry(
         sensors.extend([
             AiraVoltageSensor(coordinator, entry,
                 unique_id_suffix=f"voltage_phase_{i}",
-                data_path=("system_check", "energy_calculation", f"voltage_phase{i}"),
+                data_path=("system_check_state", "energy_calculation", f"voltage_phase_{i}"),
                 icon="mdi:flash",
-                enabled_by_default=True
             ),
             AiraCurrentSensor(coordinator, entry,
                 unique_id_suffix=f"current_phase_{i}",
-                data_path=("system_check", "energy_calculation", f"current_phase{i}"),
+                data_path=("system_check_state", "energy_calculation", f"current_phase_{i}"),
                 icon="mdi:current-ac",
-                enabled_by_default=True
             ),
         ])
    
@@ -418,10 +428,10 @@ async def async_setup_entry(
         _LOGGER.debug("Current coordinator data structure:")
         # _LOGGER.debug("  state keys: %s", coordinator.data.get("state", {}))
         # _LOGGER.debug("  flow_data keys: %s", coordinator.data.get("flow_data", {}))
-        # _LOGGER.debug("  system_check keys: %s", coordinator.data.get("system_check", {}))
+        # _LOGGER.debug("  system_check_state keys: %s", coordinator.data.get("system_check_state", {}))
         _LOGGER.debug("  state keys: %s", list(coordinator.data.get("state", {}).keys()))
         # _LOGGER.debug("  flow_data keys: %s", list(coordinator.data.get("flow_data", {}).keys()))
-        _LOGGER.debug("  system_check_state keys: %s", list(coordinator.data.get("system_check_state", {}).keys()))
+        _LOGGER.debug("  system_check_state_state keys: %s", list(coordinator.data.get("system_check_state_state", {}).keys()))
     else:
         _LOGGER.warning("Coordinator data is empty - this will cause sensor issues")
     
@@ -913,9 +923,9 @@ class AiraInstantHeatSensor(AiraSensorBase):
         # heat output (W) = specific heat (J/kg.K) x flow rate (kg/s) x DT (K)
         # heat output (W) = 4200 J/kg.K x 0.25 kg/s x 5K = 5250 W
         try:
-            flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
+            flow = float(self.coordinator.data["system_check_state"]["sensor_values"]["flow_meter_1"]) / 60.0  # in L/min -> kg/s
             specific_heat = 4186  # J/kg.K
-            dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
+            dt = float(self.coordinator.data["system_check_state"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check_state"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
             heat_output_w = specific_heat * flow * dt  # in Watts
             if self._attr_native_unit_of_measurement == UnitOfPower.KILO_WATT:
                 return round(heat_output_w / 1000, 3)  # Convert to kW
@@ -1023,7 +1033,7 @@ class AiraEnergyBalanceSensor(AiraSensorBase):
     def native_value(self) -> int | None: # type: ignore
         """Return the state."""
         try:
-            energy_balance = self.coordinator.data["system_check"].get("energy_balance", {})
+            energy_balance = self.coordinator.data["system_check_state"].get("energy_balance", {})
             return energy_balance.get("energy_balance")
         except (KeyError, ValueError, TypeError):
                 return None
@@ -1173,7 +1183,7 @@ class AiraEEVStepSensor(AiraSensorBase):
     @property
     def native_value(self) -> int | None: # type: ignore
         """Return the state."""
-        outdoor_unit = self.coordinator.data["system_check"].get("megmet_status", {})
+        outdoor_unit = self.coordinator.data["system_check_state"].get("megmet_status", {})
         return outdoor_unit.get("eev_step", None)
 
 # ============================================================================
@@ -1333,11 +1343,11 @@ class AiraInstantCOPSensor(AiraSensorBase):
     def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
-            flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
+            flow = float(self.coordinator.data["system_check_state"]["sensor_values"]["flow_meter_1"]) / 60.0  # in L/min -> kg/s
             specific_heat = 4186  # J/kg.K
-            dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
+            dt = float(self.coordinator.data["system_check_state"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check_state"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
             heat_output_w = specific_heat * flow * dt  # in Watts
-            energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
+            energy_calc = self.coordinator.data["system_check_state"].get("energy_calculation", {})
             elec_power = energy_calc.get("current_electrical_power_w")
             
             if elec_power and heat_output_w and elec_power > 0:
@@ -1362,7 +1372,7 @@ class AiraCumulativeCOPSensor(AiraSensorBase):
     def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
-            energy_calc = self.coordinator.data["system_check"]["energy_calculation"]
+            energy_calc = self.coordinator.data["system_check_state"]["energy_calculation"]
             elec_kwh = energy_calc["electrical_energy_cum_kwh"]
             thermal_kwh = energy_calc["water_energy_cum_kwh"]
 
@@ -1388,7 +1398,7 @@ class AiraDeviceCOPSensor(AiraSensorBase):
     def native_value(self) -> float | None: # type: ignore
         """Return the state."""
         try:
-            energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
+            energy_calc = self.coordinator.data["system_check_state"].get("energy_calculation", {})
             cop_now = energy_calc.get("cop_now")
             # Only return non-zero values (0 means pump is idle/not operating)
             # Filter out edge case values > 8 as they are artifacts according to emoncms.org
@@ -1435,7 +1445,7 @@ class AiraCurveSensor(AiraSensorBase):
             return None
         
         try:
-            outdoor_temp = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_ambient_temperature"])
+            outdoor_temp = float(self.coordinator.data["system_check_state"]["sensor_values"]["outdoor_unit_ambient_temperature"])
 
             # get the heat curve points
             ambient = self.extra_state_attributes["ambient"]
@@ -1467,7 +1477,7 @@ class AiraCurveSensor(AiraSensorBase):
             return {"ambient": [], "supply": []}
     
         try:
-            curves = self.coordinator.data["state"][self._curve_key][f"zone{self._zone}"]
+            curves = self.coordinator.data["state"][self._curve_key][f" zone_{self._zone}"]
             output = {
                 "ambient": [],
                 "supply": []
