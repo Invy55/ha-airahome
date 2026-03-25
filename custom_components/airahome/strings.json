@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Authenticate with Aira Cloud",
-        "description": "Enter your **Aira account credentials** to list your available devices. This is required since the account stores an important key needed to write data to the device over BLE.\n_Your credentials are only used to fetch this key and are not stored_",
+        "description": "Enter your **Aira account credentials** to list your available devices. This is required as your account holds an important key needed to access the device via Bluetooth.\n_Your credentials are only used to fetch this key and are not stored_",
         "data": {
           "cloud_email": "Email",
           "cloud_password": "Password"
@@ -18,7 +18,7 @@
       },
       "configure": {
         "title": "Configure Device Settings",
-        "description": "Set how often data should be fetched from your device. Default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors.\nAdjust the **number of zones** and **number of phases** if the detected one is incorrect.",
+        "description": "Set how often data should be read from your device. The default is **{default_interval} seconds**. Lower values provide more frequent updates but may cause more errors.\nAdjust the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
           "scan_interval": "Update Interval (seconds)",
           "num_zones": "Number of Zones (1 or 2)",
@@ -43,9 +43,9 @@
       "no_devices_found": "All devices available in your Aira account are already configured. No new devices to add.",
       "bluetooth_unavailable": "Bluetooth is not available. Please ensure Bluetooth is enabled on your Home Assistant host.",
       "device_not_found": "Invalid device. Selected device was not found in your Aira account. Make sure the device is registered in your account.",
-      "ble_device_not_found": "BLE device not found. Make sure your aira device is powered on and within Bluetooth range (5-15m). If the device is too far try using a bluetooth adapter or bluetooth repeaters like esphome.",
-      "cannot_connect": "Failed to connect to the selected device. Please ensure your aira device is powered on and within range.",
-      "not_aira_device": "The discovered device is not an aira device. Only Aira Heat Pumps can be configured for now.",
+      "ble_device_not_found": "BLE device not found. Make sure your Aira device is powered on and within Bluetooth range (5-15m). If the device is too far try using a Bluetooth adapter or Bluetooth repeaters like esphome.",
+      "cannot_connect": "Failed to connect to the selected device. Please ensure your Aira device is powered on and within range.",
+      "not_aira_device": "The discovered device is not an Aira device. Only Aira Heat Pumps can be configured for now.",
       "unknown": "An unexpected error occurred during setup."
     }
   },
@@ -70,7 +70,7 @@
     "step": {
       "init": {
         "title": "Configure Device",
-        "description": "Update the settings for your Aira Device.\nAdjust the **update interval** to change how often data is fetched from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
+        "description": "Update the settings for your Aira Device.\nAdjust the **update interval** to change how often data is read from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
           "scan_interval": "Update Interval (seconds)",
           "num_zones": "Number of Zones (1 or 2)",
@@ -246,7 +246,7 @@
     "num_zones": {
       "options": {
         "1": "Single Zone",
-        "2": "Bi Zone"
+        "2": "Dual Zone"
       }
     },
     "num_phases": {
