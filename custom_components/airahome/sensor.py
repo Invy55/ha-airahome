@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -34,6 +35,180 @@ from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, DEFAULT
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+_DEFAULT_DHW_TEMPERATURE = 15.0
+_WEEKDAY_PLAN_WEEKDAYS = (
+    "WEEKDAY_MONDAY",
+    "WEEKDAY_TUESDAY",
+    "WEEKDAY_WEDNESDAY",
+    "WEEKDAY_THURSDAY",
+    "WEEKDAY_FRIDAY",
+)
+_WEEKEND_PLAN_WEEKDAYS = (
+    "WEEKDAY_SATURDAY",
+    "WEEKDAY_SUNDAY",
+)
+
+
+def _friendly_weekday_name(weekday: str) -> str:
+    return weekday.replace("WEEKDAY_", "").title()
+
+
+def _format_schedule_time(value: Any) -> str | None:
+    if isinstance(value, datetime):
+        return value.strftime("%H:%M")
+
+    if isinstance(value, str) and value:
+        try:
+            return datetime.fromisoformat(value.replace(" ", "T")).strftime("%H:%M")
+        except ValueError:
+            return None
+
+    return None
+
+
+def _schedule_minutes(value: Any) -> int | None:
+    time_value = _format_schedule_time(value)
+    if time_value is None:
+        return None
+
+    hours, minutes = time_value.split(":")
+    return int(hours) * 60 + int(minutes)
+
+
+def _format_temperature_value(value: float) -> str:
+    if float(value).is_integer():
+        return str(int(value))
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def _dhw_schedule_events(states: dict[str, Any]) -> list[dict[str, Any]]:
+    scheduler = states.get("scheduler", {})
+    if not isinstance(scheduler, dict):
+        return []
+
+    events: list[dict[str, Any]] = []
+    for schedule in scheduler.get("schedules", []):
+        if not isinstance(schedule, dict):
+            continue
+        customer_dhw = schedule.get("customer_dhw_temp")
+        if not isinstance(customer_dhw, dict):
+            continue
+        for event in customer_dhw.get("events", []):
+            if isinstance(event, dict):
+                events.append(event)
+
+    return events
+
+
+def _dhw_event_weekdays(event_data: dict[str, Any]) -> set[str]:
+    weekdays: set[str] = set()
+    rrule = event_data.get("rrule")
+    if not isinstance(rrule, dict):
+        return weekdays
+
+    for by_weekday in rrule.get("by_weekday", []):
+        if not isinstance(by_weekday, dict):
+            continue
+        every = by_weekday.get("every")
+        if not isinstance(every, dict):
+            continue
+        weekday = every.get("weekday")
+        if isinstance(weekday, str):
+            weekdays.add(weekday)
+
+    return weekdays
+
+
+def _dhw_event_temperature(event_data: dict[str, Any]) -> float | None:
+    action = event_data.get("action")
+    if not isinstance(action, dict):
+        return None
+
+    set_dhw = action.get("set_dhw_setpoint")
+    if not isinstance(set_dhw, dict):
+        return None
+
+    try:
+        return round(float(set_dhw["temperature"]), 2)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _extract_dhw_plan(
+    states: dict[str, Any],
+    *,
+    bucket_name: str,
+    weekdays: tuple[str, ...],
+) -> dict[str, Any]:
+    weekday_set = set(weekdays)
+    parsed_events: list[dict[str, Any]] = []
+
+    for event_data in _dhw_schedule_events(states):
+        if _dhw_event_weekdays(event_data) != weekday_set:
+            continue
+
+        temperature = _dhw_event_temperature(event_data)
+        start_raw = event_data.get("event_start_dt") or event_data.get("event_start")
+        start_time = _format_schedule_time(start_raw)
+        start_minutes = _schedule_minutes(start_raw)
+
+        if temperature is None or start_time is None or start_minutes is None:
+            continue
+
+        parsed_events.append(
+            {
+                "time": start_time,
+                "minutes": start_minutes,
+                "temperature": temperature,
+            }
+        )
+
+    parsed_events.sort(key=lambda event: event["minutes"])
+
+    output: dict[str, Any] = {
+        "bucket": bucket_name,
+        "configured": False,
+        "start_time": None,
+        "end_time": None,
+        "temperature": None,
+        "summary": "Not configured",
+        "weekdays": [_friendly_weekday_name(day) for day in weekdays],
+        "events": [
+            {
+                "time": event["time"],
+                "temperature": event["temperature"],
+            }
+            for event in parsed_events
+        ],
+    }
+
+    configured_events = [
+        event for event in parsed_events if event["temperature"] != _DEFAULT_DHW_TEMPERATURE
+    ]
+    if not configured_events:
+        return output
+
+    start_event = configured_events[0]
+    end_event = next(
+        (
+            event
+            for event in parsed_events
+            if event["minutes"] > start_event["minutes"]
+            and event["temperature"] == _DEFAULT_DHW_TEMPERATURE
+        ),
+        None,
+    )
+
+    output["configured"] = True
+    output["start_time"] = start_event["time"]
+    output["end_time"] = end_event["time"] if end_event else "24:00"
+    output["temperature"] = start_event["temperature"]
+    output["summary"] = (
+        f"{output['start_time']}-{output['end_time']} @ "
+        f"{_format_temperature_value(start_event['temperature'])}°C"
+    )
+
+    return output
 
 
 async def async_setup_entry(
@@ -59,6 +234,20 @@ async def async_setup_entry(
             icon="mdi:water-thermometer-outline"
         ),
         AiraScheduledTemperatureSensor(coordinator, entry),
+        AiraDhwTimePlanSensor(
+            coordinator,
+            entry,
+            name="DHW Weekday Plan",
+            unique_id_suffix="dhw_weekday_plan",
+            weekdays=_WEEKDAY_PLAN_WEEKDAYS,
+        ),
+        AiraDhwTimePlanSensor(
+            coordinator,
+            entry,
+            name="DHW Weekend Plan",
+            unique_id_suffix="dhw_weekend_plan",
+            weekdays=_WEEKEND_PLAN_WEEKDAYS,
+        ),
         AiraTemperatureSensor(coordinator, entry,
             name="Outdoor Temperature",
             unique_id_suffix="outdoor_temp",
@@ -625,6 +814,52 @@ class AiraScheduledTemperatureSensor(AiraSensorBase):
             return round(float(value), 2) if value is not None else None
         except (KeyError, ValueError, TypeError):
             return None
+
+
+class AiraDhwTimePlanSensor(AiraSensorBase):
+    """Read-only summary of the configured recurring DHW plan."""
+
+    _attr_icon = "mdi:calendar-clock"
+    _attr_device_class = None
+    _attr_state_class = None
+    _attr_native_unit_of_measurement = None
+
+    def __init__(
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+        *,
+        name: str,
+        unique_id_suffix: str,
+        weekdays: tuple[str, ...],
+    ) -> None:
+        super().__init__(coordinator, entry)
+        self._attr_name = name
+        self._attr_unique_id = f"{self._device_uuid}_{unique_id_suffix}"
+        self._weekdays = weekdays
+
+    def _plan(self) -> dict[str, Any]:
+        return _extract_dhw_plan(
+            self.coordinator.data.get("state", {}),
+            bucket_name=self._attr_name,
+            weekdays=self._weekdays,
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        return self._plan()["summary"]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        plan = self._plan()
+        return {
+            "configured": plan["configured"],
+            "start_time": plan["start_time"],
+            "end_time": plan["end_time"],
+            "temperature": plan["temperature"],
+            "weekdays": plan["weekdays"],
+            "events": plan["events"],
+        }
 
 # ============================================================================
 # HUMIDITY SENSORS
