@@ -56,12 +56,12 @@ add_hot_water_time_plan:
           step: 0.1
           mode: box
     weekdays:
-      description: Recurring hot water plans are not currently supported by the known cloud command path.
+      description: Optional recurring weekdays. Recurring updates replace the matching weekdays in the existing DHW time plan.
       example: "mon,tue,wed,thu,fri"
       selector:
         text:
     interval_weeks:
-      description: Reserved for future recurring plan support.
+      description: Recurring plans currently support only 1.
       example: 1
       selector:
         number:
@@ -105,12 +105,12 @@ remove_hot_water_time_plan:
           step: 0.1
           mode: box
     weekdays:
-      description: Recurring hot water plans are not currently supported by the known cloud command path.
+      description: Optional recurring weekdays to remove from the existing DHW time plan.
       example: "mon,tue,wed,thu,fri"
       selector:
         text:
     interval_weeks:
-      description: Reserved for future recurring plan support.
+      description: Recurring plans currently support only 1.
       example: 1
       selector:
         number:

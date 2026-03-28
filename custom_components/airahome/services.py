@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 from functools import partial
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -41,6 +41,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+_DEFAULT_DHW_TEMPERATURE = 15.0
 
 _WEEKDAY_ENUM_NAMES = {
     "mon": "WEEKDAY_MONDAY",
@@ -306,6 +307,187 @@ def _as_utc(hass: HomeAssistant, value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _as_local(hass: HomeAssistant, value: datetime) -> datetime:
+    tzinfo = ZoneInfo(str(hass.config.time_zone))
+    if value.tzinfo is None:
+        return value.replace(tzinfo=tzinfo)
+    return value.astimezone(tzinfo)
+
+
+def _timestamp_from_local(value: datetime) -> Timestamp:
+    timestamp = Timestamp()
+    timestamp.FromDatetime(value.astimezone(timezone.utc))
+    return timestamp
+
+
+def _schedule_dt(value: datetime) -> str:
+    return value.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _weekday_values(weekdays: list[str]) -> list[int]:
+    from pyairahome.schedule.v1 import rrule_pb2
+
+    return [getattr(rrule_pb2, _WEEKDAY_ENUM_NAMES[weekday]) for weekday in weekdays]
+
+
+def _build_weekday_rrule(weekdays: list[str]) -> Any:
+    from pyairahome.schedule.v1 import rrule_pb2
+
+    rrule = rrule_pb2.RRule(
+        frequency=rrule_pb2.FREQUENCY_DAILY,
+        interval=1,
+    )
+    rrule.by_weekday.extend(
+        rrule_pb2.ByWeekday(every=rrule_pb2.Every(weekday=weekday_value))
+        for weekday_value in _weekday_values(weekdays)
+    )
+    return rrule
+
+
+def _build_dhw_setpoint_event(
+    *,
+    local_datetime: datetime,
+    temperature: float,
+    weekdays: list[str] | None = None,
+    name: str = "",
+) -> Any:
+    from pyairahome.schedule.v1.action_pb2 import Action, SetDhwSetpoint
+    from pyairahome.schedule.v1.event_pb2 import Event
+
+    event = Event(
+        action=Action(set_dhw_setpoint=SetDhwSetpoint(temperature=temperature)),
+        event_start=_timestamp_from_local(local_datetime),
+        event_start_dt=_schedule_dt(local_datetime),
+        name=name,
+    )
+    if weekdays:
+        event.rrule.CopyFrom(_build_weekday_rrule(weekdays))
+    return event
+
+
+def _parse_state_datetime(hass: HomeAssistant, value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return _as_local(hass, value)
+
+    if isinstance(value, str):
+        return _as_local(hass, datetime.fromisoformat(value.replace(" ", "T")))
+
+    raise ServiceValidationError(f"Unsupported scheduler datetime value: {value!r}")
+
+
+def _event_from_scheduler_dict(hass: HomeAssistant, event_data: dict[str, Any]) -> Any | None:
+    from pyairahome.schedule.v1.action_pb2 import Action, SetDhwSetpoint
+    from pyairahome.schedule.v1.event_pb2 import Event
+
+    action_data = event_data.get("action", {})
+    set_dhw = action_data.get("set_dhw_setpoint")
+    if not isinstance(set_dhw, dict) or "temperature" not in set_dhw:
+        return None
+
+    start_dt_value = event_data.get("event_start_dt") or event_data.get("event_start")
+    if not start_dt_value:
+        return None
+
+    start_local = _parse_state_datetime(hass, start_dt_value)
+
+    event = Event(
+        action=Action(
+            set_dhw_setpoint=SetDhwSetpoint(temperature=float(set_dhw["temperature"]))
+        ),
+        event_start=_timestamp_from_local(start_local),
+        event_start_dt=_schedule_dt(start_local),
+        name=str(event_data.get("name", "")),
+    )
+
+    end_dt_value = event_data.get("event_end_dt") or event_data.get("event_end")
+    if end_dt_value:
+        end_local = _parse_state_datetime(hass, end_dt_value)
+        event.event_end.CopyFrom(_timestamp_from_local(end_local))
+        event.event_end_dt = _schedule_dt(end_local)
+
+    rrule_data = event_data.get("rrule")
+    if isinstance(rrule_data, dict):
+        from pyairahome.schedule.v1 import rrule_pb2
+
+        frequency_name = str(rrule_data.get("frequency", "FREQUENCY_UNSPECIFIED"))
+        interval = int(rrule_data.get("interval", 0))
+        rrule = rrule_pb2.RRule(
+            frequency=getattr(rrule_pb2, frequency_name, rrule_pb2.FREQUENCY_UNSPECIFIED),
+            interval=interval,
+        )
+        for by_weekday in rrule_data.get("by_weekday", []):
+            every = by_weekday.get("every")
+            if not isinstance(every, dict):
+                continue
+            weekday_name = str(every.get("weekday", "WEEKDAY_UNSPECIFIED"))
+            rrule.by_weekday.append(
+                rrule_pb2.ByWeekday(
+                    every=rrule_pb2.Every(
+                        weekday=getattr(rrule_pb2, weekday_name, rrule_pb2.WEEKDAY_UNSPECIFIED)
+                    )
+                )
+            )
+        event.rrule.CopyFrom(rrule)
+
+    return event
+
+
+def _current_hot_water_events(
+    hass: HomeAssistant, entry_data: dict[str, Any]
+) -> list[Any]:
+    scheduler = entry_data.get("coordinator").data.get("state", {}).get("scheduler", {})
+    events: list[Any] = []
+    for schedule in scheduler.get("schedules", []):
+        customer_dhw = schedule.get("customer_dhw_temp")
+        if not isinstance(customer_dhw, dict):
+            continue
+        for event_data in customer_dhw.get("events", []):
+            event = _event_from_scheduler_dict(hass, event_data)
+            if event is not None:
+                events.append(event)
+    return events
+
+
+def _event_weekday_codes(event: Any) -> set[str]:
+    from pyairahome.schedule.v1 import rrule_pb2
+
+    reverse = {getattr(rrule_pb2, enum_name): code for code, enum_name in _WEEKDAY_ENUM_NAMES.items()}
+    weekdays: set[str] = set()
+    for by_weekday in event.rrule.by_weekday:
+        if by_weekday.HasField("every"):
+            code = reverse.get(by_weekday.every.weekday)
+            if code:
+                weekdays.add(code)
+    return weekdays
+
+
+def _remove_overlapping_recurring_events(events: list[Any], weekdays: list[str]) -> list[Any]:
+    requested = set(weekdays)
+    kept: list[Any] = []
+    for event in events:
+        if event.HasField("rrule") and _event_weekday_codes(event) & requested:
+            continue
+        kept.append(event)
+    return kept
+
+
+def _clear_hot_water_schedule() -> Any:
+    from pyairahome.schedule.v1.event_pb2 import Events
+    from pyairahome.schedule.v1.schedule_pb2 import Schedule
+
+    schedule = Schedule()
+    schedule.customer_dhw_temp.CopyFrom(Events())
+    return schedule
+
+
+def _schedule_with_events(events: list[Any]) -> Any:
+    from pyairahome.schedule.v1.schedule_pb2 import Schedule
+
+    schedule = Schedule()
+    schedule.customer_dhw_temp.events.extend(events)
+    return schedule
+
+
 def _build_hot_water_time_plan(
     hass: HomeAssistant,
     *,
@@ -320,27 +502,54 @@ def _build_hot_water_time_plan(
     from pyairahome.schedule.v1.event_pb2 import Event
     from pyairahome.schedule.v1.schedule_pb2 import Schedule
 
-    start_utc = _as_utc(hass, start_datetime)
-    end_utc = _as_utc(hass, end_datetime)
-    if end_utc <= start_utc:
+    start_local = _as_local(hass, start_datetime)
+    end_local = _as_local(hass, end_datetime)
+    if end_local <= start_local:
         raise ServiceValidationError("end_datetime must be after start_datetime.")
 
     if weekdays:
-        raise ServiceValidationError(
-            "Recurring hot water time plans are not supported yet. "
-            "The Aira app appears to use a different backend command path than AddSchedule."
+        if interval_weeks != 1:
+            raise ServiceValidationError("Recurring hot water time plans only support interval_weeks=1.")
+        same_day = start_local.date() == end_local.date()
+        all_day_next_midnight = (
+            end_local.date() == start_local.date() + timedelta(days=1)
+            and end_local.timetz().replace(tzinfo=None) == time(0, 0)
         )
+        if not same_day and not all_day_next_midnight:
+            raise ServiceValidationError(
+                "Recurring hot water time plans must end on the same local day or at 00:00 the next day."
+            )
+
+        events = [
+            _build_dhw_setpoint_event(
+                local_datetime=start_local,
+                temperature=temperature,
+                weekdays=weekdays,
+            )
+        ]
+        if not all_day_next_midnight:
+            events.append(
+                _build_dhw_setpoint_event(
+                    local_datetime=end_local,
+                    temperature=_DEFAULT_DHW_TEMPERATURE,
+                    weekdays=weekdays,
+                )
+            )
+
+        schedule = Schedule()
+        schedule.customer_dhw_temp.events.extend(events)
+        return schedule
 
     event = Event(
         action=Action(set_dhw_setpoint=SetDhwSetpoint(temperature=temperature)),
         name=plan_name,
     )
     start_timestamp = Timestamp()
-    start_timestamp.FromDatetime(start_utc)
+    start_timestamp.FromDatetime(start_local.astimezone(timezone.utc))
     event.event_start.CopyFrom(start_timestamp)
 
     end_timestamp = Timestamp()
-    end_timestamp.FromDatetime(end_utc)
+    end_timestamp.FromDatetime(end_local.astimezone(timezone.utc))
     event.event_end.CopyFrom(end_timestamp)
 
     schedule = Schedule()
@@ -396,7 +605,7 @@ async def _handle_deactivate_hot_water_boost(hass: HomeAssistant, call: ServiceC
 
 
 async def _handle_add_hot_water_time_plan(hass: HomeAssistant, call: ServiceCall) -> None:
-    from pyairahome.commands import AddSchedule
+    from pyairahome.commands import AddSchedule, RemoveSchedule
 
     entry_data = _select_entry_data(hass, call)
 
@@ -411,7 +620,22 @@ async def _handle_add_hot_water_time_plan(hass: HomeAssistant, call: ServiceCall
         weekdays=call.data[CONF_WEEKDAYS],
         interval_weeks=int(call.data[CONF_INTERVAL_WEEKS]),
     )
-    updates = await _run_cloud_command(hass, entry_data, AddSchedule(schedule))
+    if call.data[CONF_WEEKDAYS]:
+        merged_events = _remove_overlapping_recurring_events(
+            _current_hot_water_events(hass, entry_data),
+            call.data[CONF_WEEKDAYS],
+        )
+        merged_events.extend(schedule.customer_dhw_temp.events)
+
+        updates = await _run_cloud_command(
+            hass, entry_data, RemoveSchedule(_clear_hot_water_schedule())
+        )
+        _ensure_success(updates)
+        updates = await _run_cloud_command(
+            hass, entry_data, AddSchedule(_schedule_with_events(merged_events))
+        )
+    else:
+        updates = await _run_cloud_command(hass, entry_data, AddSchedule(schedule))
     _ensure_success(updates)
     _queue_refresh(hass, entry_data)
 
@@ -432,7 +656,21 @@ async def _handle_remove_hot_water_time_plan(hass: HomeAssistant, call: ServiceC
         weekdays=call.data[CONF_WEEKDAYS],
         interval_weeks=int(call.data[CONF_INTERVAL_WEEKS]),
     )
-    updates = await _run_cloud_command(hass, entry_data, RemoveSchedule(schedule))
+    if call.data[CONF_WEEKDAYS]:
+        remaining_events = _remove_overlapping_recurring_events(
+            _current_hot_water_events(hass, entry_data),
+            call.data[CONF_WEEKDAYS],
+        )
+        updates = await _run_cloud_command(
+            hass, entry_data, RemoveSchedule(_clear_hot_water_schedule())
+        )
+        _ensure_success(updates)
+        if remaining_events:
+            updates = await _run_cloud_command(
+                hass, entry_data, AddSchedule(_schedule_with_events(remaining_events))
+            )
+    else:
+        updates = await _run_cloud_command(hass, entry_data, RemoveSchedule(schedule))
     _ensure_success(updates)
     _queue_refresh(hass, entry_data)
 
