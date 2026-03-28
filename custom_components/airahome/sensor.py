@@ -347,6 +347,19 @@ def _thermal_power_attributes(
     return attributes
 
 
+def _reported_cop_value(coordinator_data: dict[str, Any]) -> float | None:
+    try:
+        energy_calc = coordinator_data["system_check"].get("energy_calculation", {})
+        cop_now = float(energy_calc.get("cop_now"))
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    # Filter out invalid or obviously spurious values from the device.
+    if 0 < cop_now <= 8:
+        return round(cop_now, 2)
+    return None
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -1847,14 +1860,20 @@ class AiraInstantCOPSensor(AiraSensorBase):
             unique_id_suffix="hc_instant_power_w",
             data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
         )
+        reported_cop = _reported_cop_value(self.coordinator.data)
 
-        if heat_output_w is None or electrical_power_w is None or electrical_power_w <= 0:
-            return None
+        if (
+            heat_output_w is not None
+            and electrical_power_w is not None
+            and electrical_power_w > 0
+            and heat_output_w > 0
+        ):
+            try:
+                return round(heat_output_w / electrical_power_w, 2)
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
 
-        try:
-            return round(heat_output_w / electrical_power_w, 2)
-        except (TypeError, ValueError, ZeroDivisionError):
-            return None
+        return reported_cop
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -1872,6 +1891,15 @@ class AiraInstantCOPSensor(AiraSensorBase):
         )
         thermal_attributes["electrical_power_w"] = electrical_power_w
         thermal_attributes["electrical_power_source"] = electrical_power_source
+        thermal_attributes["reported_cop"] = _reported_cop_value(self.coordinator.data)
+        thermal_attributes["cop_source"] = (
+            "calculated"
+            if thermal_attributes.get("heat_output_w") not in (None, 0.0)
+            and electrical_power_w not in (None, 0.0)
+            else "device_reported"
+            if thermal_attributes.get("reported_cop") is not None
+            else None
+        )
         return thermal_attributes
 
 class AiraCumulativeCOPSensor(AiraSensorBase):
@@ -1919,16 +1947,7 @@ class AiraDeviceCOPSensor(AiraSensorBase):
     @property
     def native_value(self) -> float | None:
         """Return the state."""
-        try:
-            energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
-            cop_now = energy_calc.get("cop_now")
-            # Only return non-zero values (0 means pump is idle/not operating)
-            # Filter out edge case values > 8 as they are artifacts according to emoncms.org
-            if cop_now and cop_now > 0 and cop_now <= 8: 
-                return round(cop_now, 2)
-            return None
-        except (KeyError, ValueError, TypeError):
-                return None
+        return _reported_cop_value(self.coordinator.data)
 
 # ============================================================================
 # CURVE SENSOR
