@@ -27,6 +27,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -209,6 +210,141 @@ def _extract_dhw_plan(
     )
 
     return output
+
+
+def _coordinator_float_value(
+    coordinator_data: dict[str, Any],
+    data_path: tuple[str, ...],
+) -> float | None:
+    value: Any = coordinator_data
+    try:
+        for path in data_path:
+            value = value[path]
+        return float(value)
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _entity_state_float_value(
+    hass: HomeAssistant | None,
+    *,
+    device_uuid: str,
+    unique_id_suffix: str,
+) -> float | None:
+    if hass is None:
+        return None
+
+    entity_registry = er.async_get(hass)
+    entity_id = entity_registry.async_get_entity_id(
+        "sensor",
+        DOMAIN,
+        f"{device_uuid}_{unique_id_suffix}",
+    )
+    if entity_id is None:
+        device_registry = dr.async_get(hass)
+        device_entry = device_registry.async_get_device(
+            identifiers={(DOMAIN, device_uuid)}
+        )
+        if device_entry is not None:
+            target_unique_id = f"{device_uuid}_{unique_id_suffix}"
+            for entry in er.async_entries_for_device(entity_registry, device_entry.id):
+                if (
+                    entry.domain == "sensor"
+                    and entry.platform == DOMAIN
+                    and entry.unique_id == target_unique_id
+                ):
+                    entity_id = entry.entity_id
+                    break
+
+    if entity_id is None:
+        return None
+
+    state = hass.states.get(entity_id)
+    if state is None or state.state in {"unknown", "unavailable"}:
+        return None
+
+    try:
+        return float(state.state)
+    except (TypeError, ValueError):
+        return None
+
+
+def _resolve_sensor_source_value(
+    coordinator_data: dict[str, Any],
+    hass: HomeAssistant | None,
+    *,
+    device_uuid: str,
+    unique_id_suffix: str,
+    data_path: tuple[str, ...],
+) -> tuple[float | None, str | None]:
+    value = _coordinator_float_value(coordinator_data, data_path)
+    if value is not None:
+        return value, "coordinator"
+
+    value = _entity_state_float_value(
+        hass,
+        device_uuid=device_uuid,
+        unique_id_suffix=unique_id_suffix,
+    )
+    if value is not None:
+        return value, "entity_state"
+
+    return None, None
+
+
+def _thermal_power_attributes(
+    coordinator_data: dict[str, Any],
+    hass: HomeAssistant | None,
+    *,
+    device_uuid: str,
+) -> dict[str, float | str | None]:
+    flow_l_min, flow_source = _resolve_sensor_source_value(
+        coordinator_data,
+        hass,
+        device_uuid=device_uuid,
+        unique_id_suffix="flow_meter_1",
+        data_path=("system_check", "sensor_values", "flow_meter1"),
+    )
+    supply_temperature, supply_source = _resolve_sensor_source_value(
+        coordinator_data,
+        hass,
+        device_uuid=device_uuid,
+        unique_id_suffix="ou_supply_temp",
+        data_path=("system_check", "sensor_values", "outdoor_unit_supply_temperature"),
+    )
+    return_temperature, return_source = _resolve_sensor_source_value(
+        coordinator_data,
+        hass,
+        device_uuid=device_uuid,
+        unique_id_suffix="ou_return_temp",
+        data_path=("system_check", "sensor_values", "outdoor_unit_return_temperature"),
+    )
+
+    attributes: dict[str, float | str | None] = {
+        "flow_l_min": None,
+        "supply_temperature": None,
+        "return_temperature": None,
+        "delta_t_c": None,
+        "heat_output_w": None,
+        "flow_source": flow_source,
+        "supply_source": supply_source,
+        "return_source": return_source,
+    }
+
+    if flow_l_min is None or supply_temperature is None or return_temperature is None:
+        return attributes
+
+    delta_t = supply_temperature - return_temperature
+    attributes.update(
+        {
+            "flow_l_min": round(flow_l_min, 3),
+            "supply_temperature": round(supply_temperature, 3),
+            "return_temperature": round(return_temperature, 3),
+            "delta_t_c": round(delta_t, 3),
+            "heat_output_w": round(4186 * (flow_l_min / 60.0) * delta_t, 3),
+        }
+    )
+    return attributes
 
 
 async def async_setup_entry(
@@ -1222,16 +1358,31 @@ class AiraInstantHeatSensor(AiraSensorBase):
         """Return the state."""
         # heat output (W) = specific heat (J/kg.K) x flow rate (kg/s) x DT (K)
         # heat output (W) = 4200 J/kg.K x 0.25 kg/s x 5K = 5250 W
+        heat_output_w = _thermal_power_attributes(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+        )["heat_output_w"]
+        if heat_output_w is None:
+            return None
+
         try:
-            flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
-            specific_heat = 4186  # J/kg.K
-            dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
-            heat_output_w = specific_heat * flow * dt  # in Watts
             if self._attr_native_unit_of_measurement == UnitOfPower.KILO_WATT:
                 return round(heat_output_w / 1000, 3)  # Convert to kW
             return round(heat_output_w, 3)
-        except (KeyError, ValueError, TypeError):
+        except (ValueError, TypeError):
             return None
+
+    def _calculation_attributes(self) -> dict[str, float | str | None]:
+        return _thermal_power_attributes(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return self._calculation_attributes()
 
 # ============================================================================
 # PRESSURE SENSORS
@@ -1684,19 +1835,44 @@ class AiraInstantCOPSensor(AiraSensorBase):
     @property
     def native_value(self) -> float | None:
         """Return the state."""
+        heat_output_w = _thermal_power_attributes(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+        )["heat_output_w"]
+        electrical_power_w, _ = _resolve_sensor_source_value(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+            unique_id_suffix="hc_instant_power_w",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+        )
+
+        if heat_output_w is None or electrical_power_w is None or electrical_power_w <= 0:
+            return None
+
         try:
-            flow = float(self.coordinator.data["system_check"]["sensor_values"]["flow_meter1"]) / 60.0  # in L/min -> kg/s
-            specific_heat = 4186  # J/kg.K
-            dt = float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_supply_temperature"]) - float(self.coordinator.data["system_check"]["sensor_values"]["outdoor_unit_return_temperature"])  # delta T in K
-            heat_output_w = specific_heat * flow * dt  # in Watts
-            energy_calc = self.coordinator.data["system_check"].get("energy_calculation", {})
-            elec_power = energy_calc.get("current_electrical_power_w")
-            
-            if elec_power and heat_output_w and elec_power > 0:
-                return round(heat_output_w / elec_power, 2)
+            return round(heat_output_w / electrical_power_w, 2)
+        except (TypeError, ValueError, ZeroDivisionError):
             return None
-        except (KeyError, ValueError, TypeError):
-            return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        thermal_attributes = _thermal_power_attributes(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+        )
+        electrical_power_w, electrical_power_source = _resolve_sensor_source_value(
+            self.coordinator.data,
+            self.hass,
+            device_uuid=self._device_uuid,
+            unique_id_suffix="hc_instant_power_w",
+            data_path=("system_check", "energy_calculation", "current_electrical_power_w"),
+        )
+        thermal_attributes["electrical_power_w"] = electrical_power_w
+        thermal_attributes["electrical_power_source"] = electrical_power_source
+        return thermal_attributes
 
 class AiraCumulativeCOPSensor(AiraSensorBase):
     """Cumulative COP sensor."""
