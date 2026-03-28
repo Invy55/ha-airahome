@@ -52,8 +52,6 @@ _WEEKDAY_ENUM_NAMES = {
     "sun": "WEEKDAY_SUNDAY",
 }
 
-_DHW_SCHEDULE_RESET_TEMPERATURE = 15.0
-
 
 def _validate_weekdays(value: Any) -> list[str]:
     if value in (None, "", []):
@@ -103,7 +101,7 @@ HOT_WATER_TIME_PLAN_SCHEMA = vol.Schema(
         vol.Required(CONF_TEMPERATURE): vol.All(vol.Coerce(float), vol.Range(min=15, max=65)),
         vol.Optional(CONF_PLAN_NAME, default=""): cv.string,
         vol.Optional(CONF_WEEKDAYS, default=[]): _validate_weekdays,
-        vol.Optional(CONF_INTERVAL_WEEKS, default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=1)),
+        vol.Optional(CONF_INTERVAL_WEEKS, default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=52)),
     }
 )
 
@@ -302,54 +300,10 @@ def _build_zone_setpoints_command(offset: float) -> Any:
     )
 
 
-def _as_local_datetime(hass: HomeAssistant, value: datetime) -> datetime:
+def _as_utc(hass: HomeAssistant, value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=ZoneInfo(str(hass.config.time_zone)))
-    return value.astimezone(ZoneInfo(str(hass.config.time_zone)))
-
-
-def _schedule_timestamp(value: datetime) -> Timestamp:
-    """Encode schedule timestamps as wall-clock time, matching app behavior."""
-    timestamp = Timestamp()
-    timestamp.FromDatetime(
-        datetime(
-            value.year,
-            value.month,
-            value.day,
-            value.hour,
-            value.minute,
-            value.second,
-            value.microsecond,
-            tzinfo=timezone.utc,
-        )
-    )
-    return timestamp
-
-
-def _schedule_datetime_string(value: datetime) -> str:
-    return value.strftime("%Y-%m-%d %H:%M:%S")
-
-
-def _weekday_rrule(weekdays: list[str], interval_weeks: int) -> Any:
-    from pyairahome.schedule.v1 import rrule_pb2
-
-    if interval_weeks != 1:
-        raise ServiceValidationError(
-            "Recurring hot water time plans currently only support interval_weeks=1."
-        )
-
-    return rrule_pb2.RRule(
-        frequency=rrule_pb2.Frequency.FREQUENCY_DAILY,
-        interval=1,
-        by_weekday=[
-            rrule_pb2.ByWeekday(
-                every=rrule_pb2.Every(
-                    weekday=getattr(rrule_pb2.Weekday, _WEEKDAY_ENUM_NAMES[weekday])
-                )
-            )
-            for weekday in weekdays
-        ],
-    )
+        value = value.replace(tzinfo=ZoneInfo(str(hass.config.time_zone)))
+    return value.astimezone(timezone.utc)
 
 
 def _build_hot_water_time_plan(
@@ -366,67 +320,28 @@ def _build_hot_water_time_plan(
     from pyairahome.schedule.v1.event_pb2 import Event
     from pyairahome.schedule.v1.schedule_pb2 import Schedule
 
-    start_local = _as_local_datetime(hass, start_datetime)
-    end_local = _as_local_datetime(hass, end_datetime)
-    if end_local <= start_local:
+    start_utc = _as_utc(hass, start_datetime)
+    end_utc = _as_utc(hass, end_datetime)
+    if end_utc <= start_utc:
         raise ServiceValidationError("end_datetime must be after start_datetime.")
 
     if weekdays:
-        if end_local.time() <= start_local.time():
-            raise ServiceValidationError(
-                "Recurring hot water time plans must end after they start on the same day."
-            )
-
-        rrule = _weekday_rrule(weekdays, interval_weeks)
-        anchor_date = start_local.date()
-
-        midnight_local = start_local.replace(
-            year=anchor_date.year,
-            month=anchor_date.month,
-            day=anchor_date.day,
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
+        raise ServiceValidationError(
+            "Recurring hot water time plans are not supported yet. "
+            "The Aira app appears to use a different backend command path than AddSchedule."
         )
-        start_change_local = start_local.replace(
-            year=anchor_date.year,
-            month=anchor_date.month,
-            day=anchor_date.day,
-        )
-        end_change_local = start_local.replace(
-            year=anchor_date.year,
-            month=anchor_date.month,
-            day=anchor_date.day,
-            hour=end_local.hour,
-            minute=end_local.minute,
-            second=end_local.second,
-            microsecond=end_local.microsecond,
-        )
-
-        schedule = Schedule()
-        for event_time, event_temperature in (
-            (midnight_local, _DHW_SCHEDULE_RESET_TEMPERATURE),
-            (start_change_local, temperature),
-            (end_change_local, _DHW_SCHEDULE_RESET_TEMPERATURE),
-        ):
-            event = Event(
-                action=Action(set_dhw_setpoint=SetDhwSetpoint(temperature=event_temperature))
-            )
-            event.event_start.CopyFrom(_schedule_timestamp(event_time))
-            event.event_start_dt = _schedule_datetime_string(event_time)
-            event.rrule.CopyFrom(rrule)
-            schedule.customer_dhw_temp.events.append(event)
-        return schedule
 
     event = Event(
         action=Action(set_dhw_setpoint=SetDhwSetpoint(temperature=temperature)),
         name=plan_name,
     )
-    event.event_start.CopyFrom(_schedule_timestamp(start_local))
-    event.event_end.CopyFrom(_schedule_timestamp(end_local))
-    event.event_start_dt = _schedule_datetime_string(start_local)
-    event.event_end_dt = _schedule_datetime_string(end_local)
+    start_timestamp = Timestamp()
+    start_timestamp.FromDatetime(start_utc)
+    event.event_start.CopyFrom(start_timestamp)
+
+    end_timestamp = Timestamp()
+    end_timestamp.FromDatetime(end_utc)
+    event.event_end.CopyFrom(end_timestamp)
 
     schedule = Schedule()
     schedule.customer_dhw_temp.events.append(event)
