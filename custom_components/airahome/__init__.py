@@ -25,6 +25,7 @@ from .const import (
 )
 
 from .coordinator import AiraDataUpdateCoordinator
+from .services import async_register_services, async_unregister_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,11 +35,13 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.W
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Aira Heat Pump component."""
     hass.data.setdefault(DOMAIN, {})
+    await async_register_services(hass)
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Aira Heat Pump from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+    await async_register_services(hass)
     
     # Get stored data
     mac_address = entry.data.get(CONF_MAC_ADDRESS)
@@ -287,6 +290,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         # Clean up stored data
         hass.data[DOMAIN].pop(entry.entry_id)
+        if not any(
+            isinstance(data, dict) and "aira" in data
+            for data in hass.data[DOMAIN].values()
+        ):
+            await async_unregister_services(hass)
         _LOGGER.info("Aira integration unloaded successfully")
     else:
         _LOGGER.warning("Failed to unload some platforms")

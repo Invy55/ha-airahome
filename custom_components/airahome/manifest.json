@@ -8,9 +8,9 @@
   "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
   "integration_type": "device",
   "requirements": [
-    "pyairahome==2.1.2"
+    "pyairahome==2.2.4"
   ],
-  "version": "0.2.2",
+  "version": "0.2.3",
   "bluetooth": [
     {
       "connectable": true

@@ -1,0 +1,162 @@
+activate_hot_water_boost:
+  target:
+    device:
+      integration: airahome
+  fields:
+    duration_hours:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: 0.05
+          max: 24
+          step: 0.05
+          mode: box
+    entry_id:
+      selector:
+        text:
+    device_uuid:
+      selector:
+        text:
+
+deactivate_hot_water_boost:
+  target:
+    device:
+      integration: airahome
+  fields:
+    entry_id:
+      selector:
+        text:
+    device_uuid:
+      selector:
+        text:
+
+add_hot_water_time_plan:
+  target:
+    device:
+      integration: airahome
+  fields:
+    start_datetime:
+      required: true
+      example: "2026-03-29T12:00:00+02:00"
+      selector:
+        text:
+    end_datetime:
+      required: true
+      example: "2026-03-29T13:00:00+02:00"
+      selector:
+        text:
+    temperature:
+      required: true
+      example: 55
+      selector:
+        number:
+          min: 15
+          max: 65
+          step: 0.1
+          mode: box
+    weekdays:
+      example: "mon,tue,wed,thu,fri"
+      selector:
+        text:
+    interval_weeks:
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 52
+          step: 1
+          mode: box
+    plan_name:
+      example: "Weekday hot water"
+      selector:
+        text:
+    entry_id:
+      selector:
+        text:
+    device_uuid:
+      selector:
+        text:
+
+remove_hot_water_time_plan:
+  target:
+    device:
+      integration: airahome
+  fields:
+    start_datetime:
+      required: true
+      example: "2026-03-29T12:00:00+02:00"
+      selector:
+        text:
+    end_datetime:
+      required: true
+      example: "2026-03-29T13:00:00+02:00"
+      selector:
+        text:
+    temperature:
+      required: true
+      example: 55
+      selector:
+        number:
+          min: 15
+          max: 65
+          step: 0.1
+          mode: box
+    weekdays:
+      example: "mon,tue,wed,thu,fri"
+      selector:
+        text:
+    interval_weeks:
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 52
+          step: 1
+          mode: box
+    plan_name:
+      example: "Weekday hot water"
+      selector:
+        text:
+    entry_id:
+      selector:
+        text:
+    device_uuid:
+      selector:
+        text:
+
+set_room_offset:
+  target:
+    device:
+      integration: airahome
+  fields:
+    offset:
+      required: true
+      example: 1
+      selector:
+        number:
+          min: -5
+          max: 5
+          step: 0.1
+          mode: box
+    strategy:
+      example: room_temp_delta
+      selector:
+        select:
+          options:
+            - zone_setpoints
+            - room_temp_delta
+    duration_hours:
+      example: 0.5
+      selector:
+        number:
+          min: 0.05
+          max: 24
+          step: 0.05
+          mode: box
+    entry_id:
+      selector:
+        text:
+    device_uuid:
+      selector:
+        text:
