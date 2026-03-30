@@ -1239,9 +1239,9 @@ class AiraLEDPatternSensor(AiraSensorBase):
         """Return the state."""
         try:
             pattern = self.coordinator.data["state"].get("led_pattern", "")
-            return pattern.replace("LED_PATTERN_", "").replace("_", " ").title()
+            return str(pattern).replace("LED_PATTERN_", "").lower()
         except (KeyError, ValueError, TypeError):
-                return None
+            return None
 
     @property
     def icon(self) -> str: # type: ignore
@@ -1249,32 +1249,26 @@ class AiraLEDPatternSensor(AiraSensorBase):
         if not self.native_value:
             _LOGGER.debug("LED pattern sensor native_value is None")
             return "mdi:lightbulb-question"
-        
-        pattern = self.native_value.upper()
-        if pattern == "UNSPECIFIED":
+
+        pattern = self.native_value
+        if pattern == "unspecified":
             return "mdi:lightbulb-off"
-        elif pattern == "NORMAL":
+        elif pattern == "normal":
             return "mdi:lightbulb-on"
-        elif pattern == "COMMISSIONING":
+        elif pattern in ("commissioning", "processing", "boosting", "cooling"):
             return "mdi:lightbulb-auto"
-        elif pattern == "PROCESSING":
-            return "mdi:lightbulb-auto"
-        elif pattern == "ATTENTION":
+        elif pattern == "attention":
             return "mdi:lightbulb-alert"
-        elif pattern == "AWAY MODE":
+        elif pattern == "away_mode":
             return "mdi:lightbulb-night"
-        elif pattern == "ERROR UNACKNOWLEDGED":
+        elif pattern == "error_unacknowledged":
             return "mdi:lightbulb-alert"
-        elif pattern == "ERROR ACKNOWLEDGED":
+        elif pattern == "error_acknowledged":
             return "mdi:lightbulb-alert-outline"
-        elif pattern == "CONFIRM":
+        elif pattern == "confirm":
             return "mdi:lightbulb-check"
-        elif pattern == "BLACK":
+        elif pattern == "black":
             return "mdi:lightbulb-off"
-        elif pattern == "BOOSTING":
-            return "mdi:lightbulb-auto"
-        elif pattern == "COOLING":
-            return "mdi:lightbulb-auto"
         else:
             return "mdi:lightbulb-question"
 

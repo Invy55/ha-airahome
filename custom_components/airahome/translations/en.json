@@ -70,7 +70,7 @@
     "step": {
       "init": {
         "title": "Configure Device",
-        "description": "Update the settings for your Aira Device.\nAdjust the **update interval** to change how often data is read from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
+        "description": "Update the settings for your Aira device.\nAdjust the **update interval** to change how often data is read from your device. Lower values provide more frequent updates but may cause more errors.\nModify the **number of zones** and **number of phases** if the detected one is incorrect.",
         "data": {
           "scan_interval": "Update Interval (seconds)",
           "num_zones": "Number of Zones (1 or 2)",
@@ -143,7 +143,23 @@
           "defrosting": "Defrosting"
         }
       },
-      "led_pattern": { "name": "LED Pattern" },
+      "led_pattern": {
+        "name": "LED Pattern",
+        "state": {
+          "unspecified": "Unspecified",
+          "normal": "Normal",
+          "commissioning": "Commissioning",
+          "processing": "Processing",
+          "attention": "Attention",
+          "away_mode": "Away Mode",
+          "error_unacknowledged": "Error Unacknowledged",
+          "error_acknowledged": "Error Acknowledged",
+          "confirm": "Confirm",
+          "black": "Off",
+          "boosting": "Boosting",
+          "cooling": "Cooling"
+        }
+      },
       "system_rssi": { "name": "BLE Signal Strength" },
       "instant_cop": { "name": "Instant COP" },
       "cumulative_cop": { "name": "Cumulative COP" },
