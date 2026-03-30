@@ -1,0 +1,276 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Accedi tramite Cloud Aira",
+        "description": "Inserisci le tue **credenziali dell'account Aira** per elencare i dispositivi disponibili. Questo passaggio è necessario in quanto il tuo account ha una chiave importante necessaria per accedere al dispostivo tramite Bluetooth.\n_Le tue credenziali sono usate solo per ottenere questa chiave e non vengono salvate_",
+        "data": {
+          "cloud_email": "Email",
+          "cloud_password": "Password"
+        }
+      },
+      "select_device": {
+        "title": "Seleziona il Tuo Dispositivo",
+        "description": "**{device_count} dispositivo/i** sono stati trovati nel tuo account Aira. Seleziona il dispotivo che vuoi aggiungere.\nSe il tuo dispositivo non è in lista assicurati che sia registrato nel tuo account Aira. (Solo le pompe di calore sono supportate al momento)",
+        "data": {
+          "device": "Dispositivo/i Trovati:"
+        }
+      },
+      "configure": {
+        "title": "Configura Impostazioni Dispositivo",
+        "description": "Imposta ogni quanto i dati vengono letti dal tuo dispositivo. Il valore predefinito è di **{default_interval} secondi**. Valori più bassi forniscono aggiornamenti più frequenti ma potrebbero causare più errori.\nRegola il **numero di zone** e **numero di fasi** se quelli rilevati sono errati.",
+        "data": {
+          "scan_interval": "Frequenza di aggiornamento (secondi)",
+          "num_zones": "Numero di Zone (1 o 2)",
+          "num_phases": "Numero di Fasi (1 o 3)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Connessione al dispositivo fallita. Controlla l'indirizzo MAC e assicurati che il dispositivo sia acceso e nel raggio d'azione.",
+      "invalid_mac": "Indirizzo MAC non valido. Usa il formato XX:XX:XX:XX:XX:XX",
+      "invalid_auth": "Email o password non validi. Controlla le tue credenziali.",
+      "no_devices_found": "Nessun dispositivo trovato nel tuo account Aira.",
+      "unknown": "Un errore inaspettato è accaduto, per favore riprova o controlla i log.",
+      "cloud_timeout": "Il servizio cloud non ha risposto in tempo. Per favore riprova più tardi.",
+      "cloud_unavailable": "Il servizio cloud non è disponibile al momento. Per favore riprova più tardi.",
+      "cloud_error": "Si è verificato un errore durante la comunicazione con il servizio cloud. Per favore riprova più tardi."
+    },
+    "abort": {
+      "already_in_progress": "La configurazione di questo dispositivo Aira è già in corso. Questo potrebbe succedere se Home Assistant lo ha già scoperto via Bluetooth — controlla se è presente sulla pagina delle integrationi.",
+      "unsupported_device": "Il dispositivo selezionato non è supportato. Per ora solo le Pompe di Calore Aira sono supportate.",
+      "already_configured": "Questo dispositivo è già configurato. Per favore seleziona un altro dispotivo.",
+      "no_devices_found": "Tutti i dispositivi disponibili nel tuo account Aira sono già configurati. Nessun nuovo dispositivo da aggiungere.",
+      "bluetooth_unavailable": "Bluetooth non disponibile. Assicurati che il Bluetooth sia abilitato sull'host di Home Assistant.",
+      "device_not_found": "Dispositivo non valido. Il dispositivo selezionato non è stato trovato nel tuo account Aira. Assicurati che il dispositivo sia registrato nel tuo account.",
+      "ble_device_not_found": "Dispositivo BLE non trovato. Assicurati che il tuo dispositivo Aira sia acceso e nel raggio d'azione del Bluetooth (5-15m). Se il dispotivo è troppo lontano prova ad usare un adattatore Bluetooth o un repeater Bluetooth come esphome.",
+      "cannot_connect": "Impossibile connettersi al dispositivo selezionato. Assicurati che il dispositivo Aira sia acceso e nel raggio d'azione.",
+      "not_aira_device": "Il dispositivo rilevato non è un dispositivo Aira. Solo le Pompe di Calore Aira possono essere configurate per ora.",
+      "unknown": "Si è verificato un errore sconosciuto durante la configurazione."
+    }
+  },
+  "exceptions": {
+    "temperature_not_provided": {
+      "message": "Temperatura non fornita. Per favore specifica una temperatura in °С."
+    },
+    "invalid_temperature": {
+      "message": "La temperatura deve essere una di queste: {allowed_temperatures}°C. Ricevuta: {temperature}°C. Usa i tasti + / - button se non sei sicuro."
+    },
+    "scheduler_active": {
+      "message": "Impossibile impostare la temperatura con la programmazione attiva. Disattiva la programmazione prima."
+    },
+    "unsupported_set_temp": {
+      "message": "Impossibile impostare la temperatura di riferimento del {hvac_mode} quanto la pompa di calore è in modalità {pump_mode_state}."
+    },
+    "temperature_out_of_range": {
+      "message": "La temperatura {temperature}°C è fuori dall'intervallo consentito. Deve essere compresa tra {min_temp}°C e {max_temp}°C."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configura Dispositivo",
+        "description": "Aggiorna le impostazioni per il tuo dispositivo Aira.\nRegola l'**intervallo di aggiornamento** per modificare ogni quanto i dati vengono letti dal tuo dispositivo. Valori più bassi forniscono aggiornamenti più frequenti ma potrebbero causare più errori.\nModifica il **numero di zone** e il **numero di fasi** se quelli rilevati sono errati.",
+        "data": {
+          "scan_interval": "Frequenza di aggiornamento (secondi)",
+          "num_zones": "Numero di Zone (1 o 2)",
+          "num_phases": "Numero di Fasi (1 o 3)"
+        },
+        "data_description": {}
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "hot_water_temp": { "name": "Temperatura ACS" },
+      "target_hot_water_temp": { "name": "Temperatura Target ACS" },
+      "scheduled_temp": { "name": "Temperatura Programmata ACS" },
+      "outdoor_temp": { "name": "Temperatura Esterna" },
+      "indoor_supply_temp": { "name": "Temperatura Mandata Unita Interna" },
+      "calculated_supply_temp": { "name": "Temperatura Mandata Calcolata" },
+      "ou_supply_temp": { "name": "Temperatura Mandata UE" },
+      "ou_return_temp": { "name": "Temperatura Ritorno UE" },
+      "evaporator_coil_temp": { "name": "Temperatura Serpentina Evaporatore UE" },
+      "gas_discharge_temp": { "name": "Temperatura di Scarico Gas UE" },
+      "gas_return_temp": { "name": "Temperatura di Ritorno Gas UE" },
+      "condensing_temp": { "name": "Temperatura di Condensazione UE" },
+      "evaporating_temp": { "name": "Temperatura di Evaporazione UE" },
+      "inner_coil_temp": { "name": "Temperatura Serpentina Interna UE" },
+      "ou_voltage": { "name": "Tensione UE" },
+      "ou_current": { "name": "Corrente UE" },
+      "ou_evaporator_pressure": { "name": "Pressione Evaporatore UE" },
+      "ou_condenser_pressure": { "name": "Pressione Condensatore UE" },
+      "ou_fan_1_speed": { "name": "Velocità Ventola 1 UE" },
+      "ou_fan_2_speed": { "name": "Velocità Ventola 2 UE" },
+      "ou_compressor_speed": { "name": "Velocità Compressore UE" },
+      "ou_compressor_freq_limit": { "name": "Limite Frequenza Compressore UE" },
+      "ou_compressor_need": { "name": "Richiesta Compressore UE (%)" },
+      "ou_compressor_limit": { "name": "Limite Compressore UE (%)" },
+      "eev_step": { "name": "Passo Valvola di Espansione Elettronica" },
+      "instant_power_kw": { "name": "Potenza Assorbita Istantanea (kW)" },
+      "instant_power_w": { "name": "Potenza Assorbita Istantanea (W)" },
+      "dhw_instant_power_kw": { "name": "Potenza Assorbita Istantanea ACS (kW)" },
+      "dhw_instant_power_w": { "name": "Potenza Assorbita Istantanea ACS (W)" },
+      "hc_instant_power_kw": { "name": "Potenza Assorbita Istantanea R/C (kW)" },
+      "hc_instant_power_w": { "name": "Potenza Assorbita Istantanea R/C (W)" },
+      "instant_heat_kw": { "name": "Potenza Termica Istantanea (kW)" },
+      "instant_heat_w": { "name": "Potenza Termica Istantanea (W)" },
+      "electricity_kwh": { "name": "Consumo Elettrico Totale (kWh)" },
+      "electricity_wh": { "name": "Consumo Elettrico Totale (Wh)" },
+      "heat_kwh": { "name": "Calore Totale Prodotto (kWh)" },
+      "heat_wh": { "name": "Calore Totale Prodotto (Wh)" },
+      "energy_balance": { "name": "Bilancio Energetico" },
+      "flow_meter_1": { "name": "Flusso Circuito Primario" },
+      "flow_meter_2": { "name": "Flusso Ingresso Bollitore ACS" },
+      "operating_status": {
+        "name": "Stato Operativo",
+        "state": {
+          "unspecified": "Non Specificato",
+          "standby": "Standby",
+          "auto": "Automatico",
+          "user_specific": "Personalizzato"
+        }
+      },
+      "active_state": {
+        "name": "PC Stato Corrente",
+        "state": {
+          "unspecified": "Non Specificato",
+          "idle": "Inattiva",
+          "heating": "Riscaldamento",
+          "cooling": "Raffrescamento",
+          "dhw": "DHW",
+          "anti_legionella": "Anti-Legionella",
+          "defrosting": "Sbrinamento"
+        }
+      },
+      "led_pattern": {
+          "name": "Pattern LED",
+          "state": {
+              "unspecified": "Non specificato",
+              "normal": "Normale",
+              "commissioning": "Configurazione",
+              "processing": "Elaborazione",
+              "attention": "Attenzione",
+              "away_mode": "Modalità Assenza",
+              "error_unacknowledged": "Errore non confermato",
+              "error_acknowledged": "Errore confermato",
+              "confirm": "Conferma",
+              "black": "Spento",
+              "boosting": "Potenziamento",
+              "cooling": "Raffrescamento"
+          }
+      },
+      "system_rssi": { "name": "Potenza Segnale BLE" },
+      "instant_cop": { "name": "COP Istantaneo" },
+      "cumulative_cop": { "name": "COP Cumulativo" },
+      "reported_cop": { "name": "COP Riportato dalla PC" },
+      "voltage_phase_0": { "name": "Tensione Fase 0" },
+      "voltage_phase_1": { "name": "Tensione Fase 1" },
+      "voltage_phase_2": { "name": "Tensione Fase 2" },
+      "current_phase_0": { "name": "Corrente Fase 0" },
+      "current_phase_1": { "name": "Corrente Fase 1" },
+      "current_phase_2": { "name": "Corrente Fase 2" },
+      "zone_1_supply_temp": { "name": "Zona 1 Temperatura Mandata" },
+      "zone_1_temp": { "name": "Zona 1 Temperatura" },
+      "zone_1_humidity": { "name": "Zona 1 Umidità" },
+      "zone_1_rssi": { "name": "Zona 1 Potenza Segnale" },
+      "zone_1_active_state": {
+        "name": "Zona 1 Stato PC",
+        "state": {
+          "unspecified": "Non Specificato",
+          "idle": "Inattiva",
+          "heating": "Riscaldamento",
+          "cooling": "Raffrescamento",
+          "heating_cooling": "Riscaldamento/Raffrescamento"
+        }
+      },
+      "zone_1_valve_position": { "name": "Zona 1 Apertura Valvola" },
+      "zone_1_calculated_supply_temp": { "name": "Zona 1 Temperatura Mandata Calcolata" },
+      "zone_1_heat_target": { "name": "Zona 1 Target Riscaldamento" },
+      "zone_1_cool_target": { "name": "Zona 1 Target Raffrescamento" },
+      "zone_1_heating_curve": { "name": "Zona 1 Curva Riscaldamento" },
+      "zone_1_cooling_curve": { "name": "Zona 1 Curva Raffrescamento" },
+      "zone_2_supply_temp": { "name": "Zona 2 Temperatura Mandata" },
+      "zone_2_temp": { "name": "Zona 2 Temperatura" },
+      "zone_2_humidity": { "name": "Zona 2 Umidità" },
+      "zone_2_rssi": { "name": "Zona 2 Potenza Segnale" },
+      "zone_2_active_state": {
+        "name": "Zona 2 Stato PC",
+        "state": {
+          "unspecified": "Non Specificato",
+          "idle": "Inattiva",
+          "heating": "Riscaldamento",
+          "cooling": "Raffrescamento",
+          "heating_cooling": "Riscaldamento/Raffrescamento"
+        }
+      },
+      "zone_2_valve_position": { "name": "Zona 2 Apertura Valvola" },
+      "zone_2_calculated_supply_temp": { "name": "Zona 2 Temperatura Mandata Calcolata" },
+      "zone_2_heat_target": { "name": "Zona 2 Target Riscaldamento" },
+      "zone_2_cool_target": { "name": "Zona 2 Target Raffrescamento" },
+      "zone_2_heating_curve": { "name": "Zona 2 Curva Riscaldamento" },
+      "zone_2_cooling_curve": { "name": "Zona 2 Curva Raffrescamento" },
+      "software_version": { "name": "Versione Software" },
+      "ou_software_version": { "name": "Versione Software Esterna" },
+      "platform_version": { "name": "Versione Piattaforma" },
+      "dhw_boost_end": { "name": "Fine Boost ACS" }
+    },
+    "binary_sensor": {
+      "connection": { "name": "Stato Connessione" },
+      "manual_mode": { "name": "Modalità Manuale" },
+      "night_mode": { "name": "Modalità Notturna" },
+      "away_mode": { "name": "Modalità Vacanza" },
+      "inline_heater": { "name": "Resistenza Integrata" },
+      "dhw_heating": { "name": "Riscaldamento ACS" },
+      "defrosting": { "name": "Sbrinamento" },
+      "ou_pump": { "name": "Circolatore Primario UE" },
+      "alarms": { "name": "Allarmi" },
+      "zone_1_circulator": { "name": "Zona 1 Circolatore" },
+      "zone_2_circulator": { "name": "Zona 2 Circolatore" },
+      "thermostat_1_low_battery": { "name": "Termostato 1 Batteria Scarica" },
+      "thermostat_2_low_battery": { "name": "Termostato 2 Batteria Scarica" }
+    },
+    "water_heater": {
+      "water_heater": { "name": "Bollitore ACS" }
+    },
+    "climate": {
+      "zone_1_climate": { "name": "Zona 1" },
+      "zone_2_climate": { "name": "Zona 2" }
+    }
+  },
+  "pump_mode_state": {
+    "unspecified": "non specificato",
+    "idle": "inattiva",
+    "heating": "riscaldamento",
+    "cooling": "raffrescamento",
+    "heating_cooling": "riscaldamento/raffrescamento"
+  },
+  "device_type": {
+    "unspecified": "Dispositivo Sconosciuto",
+    "heat_pump": "Pompa di Calore",
+    "battery": "Batteria",
+    "inverter": "Inverter",
+    "photovoltaic": "Fotovoltaico"
+  },
+  "issues": {
+    "migration_required": {
+      "title": "Riconfigurazione dell'integrazione Aira necessaria",
+      "description": "Questa istanza di Aira è stata configurata con una versione precedente e non è più compatibile. Per favore cancellala e riconfigurala da capo.\nI sensori verranno ricreati con gli stessi ID interni, quindi tutto dovrebbe rimanere intatto."
+    }
+  },
+  "selector": {
+    "num_zones": {
+      "options": {
+        "1": "Singola Zona",
+        "2": "Doppia Zona"
+      }
+    },
+    "num_phases": {
+      "options": {
+        "0": "Sconosciuto (NON selezionare)",
+        "1": "Monofase",
+        "3": "Trifase"
+      }
+    }
+  }
+}
