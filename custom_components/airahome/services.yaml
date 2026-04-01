@@ -1,0 +1,33 @@
+deactivate_dhw_boost:
+  target:
+    entity:
+      - domain: water_heater
+        integration: airahome
+
+activate_dhw_boost:
+  target:
+    entity:
+      - domain: water_heater
+        integration: airahome
+  fields:
+    hours:
+      required: true
+      selector:
+        select:
+          options:
+            - label: "1 hour"
+              value: "1"
+            - label: "2 hours"
+              value: "2"
+            - label: "3 hours"
+              value: "3"
+            - label: "4 hours"
+              value: "4"
+            - label: "6 hours"
+              value: "6"
+            - label: "8 hours"
+              value: "8"
+            - label: "12 hours"
+              value: "12"
+            - label: "24 hours"
+              value: "24"

@@ -129,6 +129,9 @@ class AiraWaterHeater(CoordinatorEntity, WaterHeaterEntity): # type: ignore
             updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
             if "succeeded" in updates[-1]:
                 return True
+            elif "error" in updates[-1]:
+                _LOGGER.error("Failed to set water heater temperature: %s", updates[-1]["error"])
+                return False
         except RuntimeError as e:
             _LOGGER.error("Error setting water heater temperature: %s", str(e))
         

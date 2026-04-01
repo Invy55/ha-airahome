@@ -252,6 +252,22 @@
     "inverter": "Wechselrichter",
     "photovoltaic": "Photovoltaik"
   },
+  "services": {
+    "deactivate_dhw_boost": {
+      "name": "Warmwasser Boost deaktivieren",
+      "description": "Deaktiviert den Warmwasser Boost Modus."
+    },
+    "activate_dhw_boost": {
+      "name": "Warmwasser Boost aktivieren",
+      "description": "Aktiviert den Warmwasser Boost Modus für die angegebe Zeit.",
+      "fields": {
+        "hours": {
+          "name": "Dauer",
+          "description": "Gibt die Dauer in Studnen an, in denen der Warmwasser Boost Modus läuft."
+        }
+      }
+    }
+  },
   "issues": {
     "migration_required": {
       "title": "Die Aira-Integration muss neu konfiguriert werden",

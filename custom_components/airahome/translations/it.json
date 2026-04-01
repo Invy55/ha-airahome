@@ -252,6 +252,22 @@
     "inverter": "Inverter",
     "photovoltaic": "Fotovoltaico"
   },
+  "services": {
+    "deactivate_dhw_boost": {
+      "name": "Disattiva Boost ACS",
+      "description": "Disattiva la modalità boost dell'ACS."
+    },
+    "activate_dhw_boost": {
+      "name": "Attiva Boost ACS",
+      "description": "Attiva la modalià boost dell'ACS per una durata specificata.",
+      "fields": {
+        "hours": {
+          "name": "Durata",
+          "description": "Numero di ore di funzionamento del boost dell'ACS."
+        }
+      }
+    }
+  },
   "issues": {
     "migration_required": {
       "title": "Riconfigurazione dell'integrazione Aira necessaria",

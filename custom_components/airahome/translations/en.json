@@ -252,6 +252,22 @@
     "inverter": "Inverter",
     "photovoltaic": "Photovoltaic"
   },
+  "services": {
+    "deactivate_dhw_boost": {
+      "name": "Deactivate DHW Boost",
+      "description": "Deactivates DHW boost mode."
+    },
+    "activate_dhw_boost": {
+      "name": "Activate DHW Boost",
+      "description": "Activates DHW boost mode for the specified duration.",
+      "fields": {
+        "hours": {
+          "name": "Duration",
+          "description": "Number of hours to run DHW boost."
+        }
+      }
+    }
+  },
   "issues": {
     "migration_required": {
       "title": "Aira integration needs to be reconfigured",

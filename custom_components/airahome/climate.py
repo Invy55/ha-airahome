@@ -204,6 +204,9 @@ class AiraZoneClimate(AiraClimateBase):
             updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
             if "succeeded" in updates[-1]:
                 return True
+            elif "error" in updates[-1]:
+                _LOGGER.error("Failed to set zone %d %s setpoint to %s temperature: %s", self._zone, "heating" if heating is not None else "cooling", str(heating) if heating is not None else str(cooling), updates[-1]["error"])
+                return False
         except RuntimeError as e:
             _LOGGER.error("Error setting %s setpoint to %s temperature: %s", "heating" if heating is not None else "cooling", str(heating) if heating is not None else str(cooling), str(e))
         
@@ -245,6 +248,9 @@ class AiraZoneClimate(AiraClimateBase):
                 updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
                 if "succeeded" in updates[-1]:
                     results.append(True)
+                elif "error" in updates[-1]:
+                    _LOGGER.error("Failed to set %s mode to %s: %s", mode, action, updates[-1]["error"])
+                    results.append(False) # TODO: test this append
             except RuntimeError as e:
                 _LOGGER.error("Error setting %s mode to %s: %s", mode, action, str(e))
                 results.append(False)
