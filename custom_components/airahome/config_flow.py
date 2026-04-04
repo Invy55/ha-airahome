@@ -38,8 +38,10 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_NAME,
     DEFAULT_NUM_ZONES,
+    DEFAULT_NUM_PHASES,
     DOMAIN,
-    SUPPORTED_DEVICE_TYPES
+    SUPPORTED_DEVICE_TYPES,
+    BLE_COMMAND_SLEEP
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -288,7 +290,7 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 options={
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
                     CONF_NUM_ZONES: user_input.get(CONF_NUM_ZONES, self._installation.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)),
-                    CONF_NUM_PHASES: user_input.get(CONF_NUM_PHASES, self._installation.get(CONF_NUM_PHASES, 0))
+                    CONF_NUM_PHASES: user_input.get(CONF_NUM_PHASES, self._installation.get(CONF_NUM_PHASES, DEFAULT_NUM_PHASES))
                 }
             )
         
@@ -329,9 +331,9 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 )), vol.Coerce(int)),
                 vol.Required(
                     CONF_NUM_PHASES,
-                    default=str(self._installation.get(CONF_NUM_PHASES, 0))
+                    default=str(self._installation.get(CONF_NUM_PHASES, DEFAULT_NUM_PHASES))
                 ): vol.All(SelectSelector(SelectSelectorConfig(
-                    options=["0", "1", "3"],
+                    options=["1", "3"],
                     translation_key="num_phases",
                 )), vol.Coerce(int)),
             }
@@ -387,15 +389,13 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             await self._aira.ble._connect_device(ble_device)
             installation = {}
 
-            # get configuration to get the number of phases
+            # detect phases by checking if phase 1 & 2 voltage/current have any non-zero values
             configuration: dict[str, dict] = await self._aira.ble._get_configuration() # type: ignore
-            electricity_meter = configuration.get("config", {}).get("electricity_meter", {}).get("type", "ELECTRICITY_METER_TYPE_UNSPECIFIED")
-            if electricity_meter == "ELECTRICITY_METER_TYPE_ET340":
-                installation[CONF_NUM_PHASES] = 3
-            elif electricity_meter == "ELECTRICITY_METER_TYPE_ET112":
-                installation[CONF_NUM_PHASES] = 1
-            else:
-                installation[CONF_NUM_PHASES] = 0 # unknown / not detected do not provide data in ha
+            await asyncio.sleep(BLE_COMMAND_SLEEP) # give the device some time to process the command
+            system_check_state: dict = await self._aira.ble._get_system_check_state() # type: ignore
+            energy = system_check_state.get("system_check_state", {}).get("energy_calculation", {})
+            three_phase_fields = ("voltage_phase_1", "voltage_phase_2", "current_phase_1", "current_phase_2")
+            installation[CONF_NUM_PHASES] = 3 if any(energy.get(f) for f in three_phase_fields) else 1
 
             if outdoor_unit_size := configuration.get("config", {}).get("outdoor_unit_size", None):
                 if "NONE" not in outdoor_unit_size and "UNSPECIFIED" not in outdoor_unit_size:
@@ -471,7 +471,7 @@ class AiraHomeOptionsFlowHandler(OptionsFlowWithReload):
         )
 
         current_num_phases = self.config_entry.options.get(
-            CONF_NUM_PHASES, 0
+            CONF_NUM_PHASES, DEFAULT_NUM_PHASES
         )
 
         return self.async_show_form(
@@ -493,7 +493,7 @@ class AiraHomeOptionsFlowHandler(OptionsFlowWithReload):
                     CONF_NUM_PHASES,
                     default=str(current_num_phases)
                 ): vol.All(SelectSelector(SelectSelectorConfig(
-                    options=["0", "1", "3"],
+                    options=["1", "3"],
                     translation_key="num_phases",
                 )), vol.Coerce(int)),
             }

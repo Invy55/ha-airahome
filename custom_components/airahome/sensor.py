@@ -33,7 +33,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, CONF_NUM_PHASES, DEFAULT_SHORT_NAME, DOMAIN,CONF_NUM_ZONES, DEFAULT_NUM_ZONES
+from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_INSTALLATION, CONF_MAC_ADDRESS, CONF_NUM_PHASES, DEFAULT_SHORT_NAME, DOMAIN, CONF_NUM_ZONES, DEFAULT_NUM_ZONES, DEFAULT_NUM_PHASES
 from .coordinator import AiraDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -156,11 +156,6 @@ async def async_setup_entry(
         AiraRotationSpeedSensor(coordinator, entry,
             unique_id_suffix="ou_fan_1_speed",
             data_path=("system_check_state", "megmet_status", "dc_fan_1_running_speed"),
-            icon="mdi:fan",
-        ),
-        AiraRotationSpeedSensor(coordinator, entry,
-            unique_id_suffix="ou_fan_2_speed",
-            data_path=("system_check_state", "megmet_status", "dc_fan_2_running_speed"),
             icon="mdi:fan",
         ),
         # Compressor
@@ -334,6 +329,15 @@ async def async_setup_entry(
         AiraWaterBoostEndSensor(coordinator, entry)
     ]
 
+    # DUAL FAN (only on outdoor units with a second fan)
+    outdoor_unit_size = entry.data.get(CONF_INSTALLATION, {}).get("outdoor_unit_size")
+    if outdoor_unit_size == "OUTDOOR_UNIT_SIZE_AIRA_12KW":
+        sensors.append(AiraRotationSpeedSensor(coordinator, entry,
+            unique_id_suffix="ou_fan_2_speed",
+            data_path=("system_check_state", "megmet_status", "dc_fan_2_running_speed"),
+            icon="mdi:fan",
+        ))
+
     # PER ZONE LOOP
     num_zones = entry.options.get(CONF_NUM_ZONES, DEFAULT_NUM_ZONES)
     _LOGGER.debug("Setting up sensors for %d zones based on config entry options", num_zones)
@@ -412,7 +416,7 @@ async def async_setup_entry(
             ])
 
     # PER PHASE LOOP
-    num_phases = entry.options.get(CONF_NUM_PHASES, 0)
+    num_phases = entry.options.get(CONF_NUM_PHASES, DEFAULT_NUM_PHASES)
     _LOGGER.debug("Setting up sensors for %d phases based on config entry options", num_phases)
     if num_phases < 0:
         _LOGGER.warning("To enable voltage and current sensors configure the number of phases in the integration configuration.")

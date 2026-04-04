@@ -271,7 +271,15 @@
   "issues": {
     "migration_required": {
       "title": "Aira integration needs to be reconfigured",
-      "description": "This Aira instance was set up with an older version and is no longer compatible. Please delete it and set it up again.\nSensors will be recreated with the same internal ID, so everything should stay intact."
+      "description": "This Aira instance was set up with an older version and is no longer compatible. Press **Fix** to remove it and set it up again.\nSensors will be recreated with the same internal ID, so everything should stay intact.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Remove and reconfigure Aira",
+            "description": "**This will remove the outdated Aira integration entry.**\nHome Assistant should automatically detect your device, allowing you to set it up in **Devices & Services**. If it doesn't, go to **Settings → Devices & Services → Add Integration** and search for AiraHome."
+          }
+        }
+      }
     }
   },
   "selector": {
@@ -283,7 +291,6 @@
     },
     "num_phases": {
       "options": {
-        "0": "Unknown (Do NOT select)",
         "1": "Single Phase",
         "3": "Three Phase"
       }
