@@ -94,6 +94,18 @@ Confirmed bugs and feature requests can be filed on [GitHub Issues](https://gith
 
 ---
 
+## 🌍 Translators
+
+Thanks to everyone who contributed translations:
+
+| Language | Contributors |
+|----------|-------------|
+| 🇬🇧 English | [@Invy55](https://github.com/Invy55), [@jam3sward](https://github.com/jam3sward) |
+| 🇮🇹 Italian | [@Invy55](https://github.com/Invy55) |
+| 🇩🇪 German | [@dbhorst](https://github.com/dbhorst) |
+
+---
+
 ## ☕ Support Me
 
 I created and currently maintain this project because I genuinely enjoy doing so. No need to tip, but if you'd still like to show some appreciation, you can do it here. Thank you!
