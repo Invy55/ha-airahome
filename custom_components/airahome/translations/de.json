@@ -238,20 +238,6 @@
       "zone_2_climate": { "name": "Zone 2" }
     }
   },
-  "pump_mode_state": {
-    "unspecified": "Nicht spezifiziert",
-    "idle": "Leerlauf",
-    "heating": "Heizen",
-    "cooling": "Kühlen",
-    "heating_cooling": "Heizen/Kühlen"
-  },
-  "device_type": {
-    "unspecified": "Unbekanntes Gerät",
-    "heat_pump": "Wärmepumpe",
-    "battery": "Batterie",
-    "inverter": "Wechselrichter",
-    "photovoltaic": "Photovoltaik"
-  },
   "services": {
     "deactivate_dhw_boost": {
       "name": "Warmwasser Boost deaktivieren",
@@ -283,16 +269,34 @@
     }
   },
   "selector": {
-    "num_zones": {
+    "device_type": {
       "options": {
-        "1": "Eine Zone",
-        "2": "Zwei Zonen"
+        "unspecified": "Unbekanntes Gerät",
+        "heat_pump": "Wärmepumpe",
+        "battery": "Batterie",
+        "inverter": "Wechselrichter",
+        "photovoltaic": "Photovoltaik"
       }
     },
     "num_phases": {
       "options": {
         "1": "Einphasig",
         "3": "Dreiphasig"
+      }
+    },
+    "num_zones": {
+      "options": {
+        "1": "Eine Zone",
+        "2": "Zwei Zonen"
+      }
+    },
+    "pump_mode_state": {
+      "options": {
+        "unspecified": "Nicht spezifiziert",
+        "idle": "Leerlauf",
+        "heating": "Heizen",
+        "cooling": "Kühlen",
+        "heating_cooling": "Heizen/Kühlen"
       }
     }
   }

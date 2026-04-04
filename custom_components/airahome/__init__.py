@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.helpers.translation import async_get_translations
 from pyairahome import AiraHome
@@ -30,18 +31,14 @@ from .services import async_setup_services, async_unload_services
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_get_translation(hass: HomeAssistant, category: str, key: str) -> str:
-    """Return a translated string for the given category and key, falling back to the key itself."""
-    translations = await async_get_translations(
-        hass,
-        hass.config.language,
-        category,
-        [DOMAIN],
-    )
-    return translations.get(f"component.{DOMAIN}.{category}.{key}", key)
+async def async_get_translation(hass: HomeAssistant, selector_name: str, key: str) -> str:
+    """Return a translated selector option for the given name and key, falling back to the key itself."""
+    translations = await async_get_translations(hass, hass.config.language, "selector", [DOMAIN])
+    return translations.get(f"component.{DOMAIN}.selector.{selector_name}.options.{key}", key)
 
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.WATER_HEATER, Platform.CLIMATE]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:

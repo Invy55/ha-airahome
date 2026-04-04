@@ -238,20 +238,6 @@
       "zone_2_climate": { "name": "Zone 2" }
     }
   },
-  "pump_mode_state": {
-    "unspecified": "unspecified",
-    "idle": "idle",
-    "heating": "heating",
-    "cooling": "cooling",
-    "heating_cooling": "heating/cooling"
-  },
-  "device_type": {
-    "unspecified": "Unknown Device",
-    "heat_pump": "Heat Pump",
-    "battery": "Battery",
-    "inverter": "Inverter",
-    "photovoltaic": "Photovoltaic"
-  },
   "services": {
     "deactivate_dhw_boost": {
       "name": "Deactivate DHW Boost",
@@ -283,16 +269,34 @@
     }
   },
   "selector": {
-    "num_zones": {
+    "device_type": {
       "options": {
-        "1": "Single Zone",
-        "2": "Dual Zone"
+        "unspecified": "Unknown Device",
+        "heat_pump": "Heat Pump",
+        "battery": "Battery",
+        "inverter": "Inverter",
+        "photovoltaic": "Photovoltaic"
       }
     },
     "num_phases": {
       "options": {
         "1": "Single Phase",
         "3": "Three Phase"
+      }
+    },
+    "num_zones": {
+      "options": {
+        "1": "Single Zone",
+        "2": "Dual Zone"
+      }
+    },
+    "pump_mode_state": {
+      "options": {
+        "unspecified": "unspecified",
+        "idle": "idle",
+        "heating": "heating",
+        "cooling": "cooling",
+        "heating_cooling": "heating/cooling"
       }
     }
   }

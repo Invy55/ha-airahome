@@ -238,20 +238,6 @@
       "zone_2_climate": { "name": "Zona 2" }
     }
   },
-  "pump_mode_state": {
-    "unspecified": "non specificato",
-    "idle": "inattiva",
-    "heating": "riscaldamento",
-    "cooling": "raffrescamento",
-    "heating_cooling": "riscaldamento/raffrescamento"
-  },
-  "device_type": {
-    "unspecified": "Dispositivo Sconosciuto",
-    "heat_pump": "Pompa di Calore",
-    "battery": "Batteria",
-    "inverter": "Inverter",
-    "photovoltaic": "Fotovoltaico"
-  },
   "services": {
     "deactivate_dhw_boost": {
       "name": "Disattiva Boost ACS",
@@ -283,16 +269,34 @@
     }
   },
   "selector": {
-    "num_zones": {
+    "device_type": {
       "options": {
-        "1": "Singola Zona",
-        "2": "Doppia Zona"
+        "unspecified": "Dispositivo Sconosciuto",
+        "heat_pump": "Pompa di Calore",
+        "battery": "Batteria",
+        "inverter": "Inverter",
+        "photovoltaic": "Fotovoltaico"
       }
     },
     "num_phases": {
       "options": {
         "1": "Monofase",
         "3": "Trifase"
+      }
+    },
+    "num_zones": {
+      "options": {
+        "1": "Singola Zona",
+        "2": "Doppia Zona"
+      }
+    },
+    "pump_mode_state": {
+      "options": {
+        "unspecified": "non specificato",
+        "idle": "inattiva",
+        "heating": "riscaldamento",
+        "cooling": "raffrescamento",
+        "heating_cooling": "riscaldamento/raffrescamento"
       }
     }
   }
