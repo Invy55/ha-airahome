@@ -1,17 +1,18 @@
 """Services for the Aira Home integration."""
 from __future__ import annotations
 
-import logging
 from functools import partial
+import logging
 
-import voluptuous as vol
 from google.protobuf.duration_pb2 import Duration
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, device_registry as dr, entity_registry as er
 from pyairahome.commands import ActivateHotWaterBoosting, DeactivateHotWaterBoosting
+import voluptuous as vol
 
 from .const import DOMAIN
+
 
 _LOGGER = logging.getLogger(__name__)
 

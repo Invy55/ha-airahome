@@ -2,24 +2,30 @@
 from __future__ import annotations
 
 import asyncio
-import logging
-from typing import Any
-from functools import partial
-from datetime import timedelta
 from copy import deepcopy
+from datetime import timedelta
+import logging
 from time import perf_counter
+from typing import Any
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from pyairahome import AiraHome
 
-from .const import CONF_DEVICE_NAME, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN, STALE_DATA_THRESHOLD, DEFAULT_DATA, BLE_CONNECT_TIMEOUT, BLE_COMMAND_SLEEP, BLE_RECONNECT_BACKOFF
+from .const import (
+    BLE_COMMAND_SLEEP,
+    BLE_CONNECT_TIMEOUT,
+    BLE_RECONNECT_BACKOFF,
+    CONF_DEVICE_NAME,
+    CONF_MAC_ADDRESS,
+    DEFAULT_DATA,
+    DEFAULT_SHORT_NAME,
+    DOMAIN,
+    STALE_DATA_THRESHOLD,
+)
+
 
 _LOGGER = logging.getLogger(__name__)
 

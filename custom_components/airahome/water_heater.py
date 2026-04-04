@@ -4,33 +4,22 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.water_heater import (
-    WaterHeaterEntity,
-    WaterHeaterEntityFeature,
-)
+from homeassistant.components.water_heater import WaterHeaterEntity, WaterHeaterEntityFeature
+from homeassistant.components.water_heater.const import STATE_ELECTRIC, STATE_HEAT_PUMP, STATE_PERFORMANCE
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    ATTR_TEMPERATURE,
-    STATE_OFF,
-    UnitOfTemperature
-)
-from homeassistant.exceptions import ServiceValidationError
-from homeassistant.components.water_heater.const import (
-    STATE_ELECTRIC,
-    STATE_HEAT_PUMP,
-    STATE_PERFORMANCE,
-)
+from homeassistant.const import ATTR_TEMPERATURE, STATE_OFF, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from pyairahome import AiraHome
+from pyairahome.commands import SetTargetHotWaterTemperature
 
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_INSTALLATION, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
 
-from pyairahome.commands import SetTargetHotWaterTemperature
-from pyairahome import AiraHome
 
 _LOGGER = logging.getLogger(__name__)
 

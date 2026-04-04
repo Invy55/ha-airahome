@@ -2,29 +2,26 @@
 from __future__ import annotations
 
 import asyncio
+from functools import partial
 import logging
 from typing import Any
-from functools import partial
 
-import voluptuous as vol
-
-from homeassistant.config_entries import ConfigFlow, OptionsFlowWithReload, ConfigFlowResult, ConfigEntry
+from grpc import StatusCode
+from grpc._channel import _InactiveRpcError
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
-
 from pyairahome import AiraHome
-from pyairahome.utils.exceptions import AuthenticationError
 from pyairahome.enums import DeviceType
-from grpc._channel import _InactiveRpcError
-from grpc import RpcError, StatusCode
+from pyairahome.utils.exceptions import AuthenticationError
+import voluptuous as vol
 
 from . import async_get_translation
 from .const import (
+    BLE_COMMAND_SLEEP,
     CONF_CERTIFICATE,
     CONF_CLOUD_EMAIL,
     CONF_CLOUD_PASSWORD,
@@ -33,16 +30,16 @@ from .const import (
     CONF_INSTALLATION,
     CONF_MAC_ADDRESS,
     CONF_NUM_PHASES,
-    CONF_SCAN_INTERVAL,
     CONF_NUM_ZONES,
-    DEFAULT_SCAN_INTERVAL,
+    CONF_SCAN_INTERVAL,
     DEFAULT_NAME,
-    DEFAULT_NUM_ZONES,
     DEFAULT_NUM_PHASES,
+    DEFAULT_NUM_ZONES,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     SUPPORTED_DEVICE_TYPES,
-    BLE_COMMAND_SLEEP
 )
+
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,15 +1,14 @@
 """Sensor platform for Aira Heat Pump."""
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
-    SensorEntityDescription
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -28,13 +27,25 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
-import homeassistant.util.dt as dt_util
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+import homeassistant.util.dt as dt_util
 
-from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_INSTALLATION, CONF_MAC_ADDRESS, CONF_NUM_PHASES, DEFAULT_SHORT_NAME, DOMAIN, CONF_NUM_ZONES, DEFAULT_NUM_ZONES, DEFAULT_NUM_PHASES
+from .const import (
+    CONF_DEVICE_NAME,
+    CONF_DEVICE_UUID,
+    CONF_INSTALLATION,
+    CONF_MAC_ADDRESS,
+    CONF_NUM_PHASES,
+    CONF_NUM_ZONES,
+    DEFAULT_NUM_PHASES,
+    DEFAULT_NUM_ZONES,
+    DEFAULT_SHORT_NAME,
+    DOMAIN,
+)
 from .coordinator import AiraDataUpdateCoordinator
+
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,11 +1,10 @@
 """Repairs flow for the Aira Heat Pump integration."""
 from __future__ import annotations
 
-import voluptuous as vol
-
 from homeassistant.components.repairs import RepairsFlow
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
+import voluptuous as vol
 
 
 async def async_create_fix_flow(

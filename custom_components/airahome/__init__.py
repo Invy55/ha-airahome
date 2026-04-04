@@ -3,17 +3,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
-from functools import partial
-from pyairahome import AiraHome
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryError
-from homeassistant.helpers.issue_registry import async_create_issue, async_delete_issue, IssueSeverity
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.helpers.translation import async_get_translations
+from pyairahome import AiraHome
 
 from .const import (
     BLE_CONNECT_TIMEOUT,
@@ -23,11 +21,11 @@ from .const import (
     CONF_MAC_ADDRESS,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
-    DOMAIN
+    DOMAIN,
 )
-
 from .coordinator import AiraDataUpdateCoordinator
 from .services import async_setup_services, async_unload_services
+
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -4,15 +4,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.climate import (
-    ClimateEntity
-)
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     ATTR_TARGET_TEMP_HIGH,
     ATTR_TARGET_TEMP_LOW,
-    HVACAction,
     ClimateEntityFeature,
-    HVACMode
+    HVACAction,
+    HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
@@ -21,6 +19,15 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from pyairahome import AiraHome
+from pyairahome.commands import (
+    DisableCoolingFunction,
+    DisableHeatingFunction,
+    EnableCoolingFunction,
+    EnableHeatingFunction,
+    SetZoneSetpoints,
+)
+from pyairahome.device.heat_pump.command.v1.set_zone_setpoints_pb2 import SetZoneSetpoints as _SetZoneSetpointsPb2, ZoneTemperatures  # type: ignore
 
 from . import async_get_translation
 from .const import (
@@ -34,13 +41,8 @@ from .const import (
 )
 from .coordinator import AiraDataUpdateCoordinator
 
-from pyairahome.commands import (
-    SetZoneSetpoints
-)
-from pyairahome.device.heat_pump.command.v1.set_zone_setpoints_pb2 import ZoneTemperatures, SetZoneSetpoints as _SetZoneSetpointsPb2 # type: ignore
 Kind = _SetZoneSetpointsPb2.Kind
-from pyairahome.commands import EnableHeatingFunction, DisableHeatingFunction, EnableCoolingFunction, DisableCoolingFunction
-from pyairahome import AiraHome
+
 
 _LOGGER = logging.getLogger(__name__)
 
