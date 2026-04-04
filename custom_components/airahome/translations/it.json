@@ -257,12 +257,11 @@
   "issues": {
     "migration_required": {
       "title": "Riconfigurazione dell'integrazione Aira necessaria",
-      "description": "Questa istanza di Aira è stata configurata con una versione precedente e non è più compatibile. Premi **Correggi** per rimuoverla e riconfigurarla.\nI sensori verranno ricreati con gli stessi ID interni, quindi tutto dovrebbe rimanere intatto.",
       "fix_flow": {
         "step": {
           "confirm": {
             "title": "Rimuovi e riconfigura Aira",
-            "description": "**Questa operazione rimuoverà la configurazione obsoleta dell'integrazione Aira.**\nHome Assistant dovrebbe rilevare automaticamente il dispositivo, permettendoti di riconfigurarlo in **Dispositivi e Servizi**. Se non dovesse farlo, vai su **Impostazioni → Dispositivi e Servizi → Aggiungi Integrazione** e cerca AiraHome."
+            "description": "Questa istanza di Aira è stata configurata con una **versione precedente** e non è più compatibile con quella attuale.\n\nCliccando **Correggi** verrà rimossa la configurazione obsoleta in modo da poterla riconfigurare. I sensori verranno ricreati con gli stessi ID interni, quindi le automazioni e la cronologia dovrebbero rimanere intatte.\n\nHome Assistant dovrebbe rilevare automaticamente il dispositivo e chiederti di riconfigurarlo. Se non dovesse farlo, vai su **Impostazioni → Dispositivi e Servizi → Aggiungi Integrazione** e cerca AiraHome."
           }
         }
       }
