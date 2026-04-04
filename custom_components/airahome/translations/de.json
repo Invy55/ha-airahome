@@ -259,11 +259,11 @@
     },
     "activate_dhw_boost": {
       "name": "Warmwasser Boost aktivieren",
-      "description": "Aktiviert den Warmwasser Boost Modus für die angegebe Zeit.",
+      "description": "Aktiviert den Warmwasser Boost Modus für die angegebene Zeit.",
       "fields": {
         "hours": {
           "name": "Dauer",
-          "description": "Gibt die Dauer in Studnen an, in denen der Warmwasser Boost Modus läuft."
+          "description": "Gibt die Dauer in Stunden an, in denen der Warmwasser Boost Modus läuft."
         }
       }
     }
