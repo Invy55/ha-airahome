@@ -54,7 +54,7 @@
       "message": "Temperatur nicht angegeben. Bitte gib eine Temperatur in °C an."
     },
     "invalid_temperature": {
-      "message": "Temperatur muss eine der folgenden sein: {allowed_temperatures}°C. Erhalten: {temperature}°C. Verwende die Tasten + / -, falls du unsicher bist."
+      "message": "Die gesetzte Temeratur {temperature}°C entspricht nicht einer der vorgegebenen Temperaturen: {allowed_temperatures}°C. Verwende die Tasten + / - für einere genauere Anpassung."
     },
     "scheduler_active": {
       "message": "Temperatur kann nicht eingestellt werden, während der Zeitplan aktiv ist. Bitte deaktiviere zuerst den Zeitplan."
@@ -256,12 +256,12 @@
   },
   "issues": {
     "migration_required": {
-      "title": "Aira integration needs to be reconfigured",
+      "title": "Die Aira Integration muss neu konfiguriert werden",
       "fix_flow": {
         "step": {
           "confirm": {
-            "title": "Remove and reconfigure Aira",
-            "description": "This Aira instance was set up with an **older version** and is no longer compatible with the current one.\n\nClicking **Fix** will remove the outdated entry so you can set it up again. Your sensors will be recreated with the same internal IDs, so automations and history should stay intact.\n\nHome Assistant should automatically detect your device and prompt you to reconfigure it. If it doesn't, go to **Settings → Devices & Services → Add Integration** and search for AiraHome."
+            "title": "Airia entfernen und neu konfigurieren",
+            "description": "Diese Aira-Instanz wurde mit einer **älteren Version** erstellt und ist nicht mehr kompatibel mit der aktuellen Version.\n\nMit einem Klick auf **beheben** wird die alte Integration entfernt und neu angelegt. Die Entitäten werden mit den gleichen IDs neu erstellt, damit die Automationen weiterhin funktionieren und der Verlauf erhalten bleibt.\n\nHome Assistant sollte automatisch das Gerät erkennen und die Konfiguration anzeigen. Falls dies nicht der Fall ist, füge dein Gerät manuell über **Einstellungen → Geräte & Dienste → Integration hinzufügen** hinzu."
           }
         }
       }
