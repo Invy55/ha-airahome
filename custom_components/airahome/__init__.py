@@ -129,8 +129,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Create data update coordinator
     coordinator = AiraDataUpdateCoordinator(hass, entry, aira, scan_interval, mac_address)
-    
-    await coordinator.async_config_entry_first_refresh()
+        
+    try:
+        async with asyncio.timeout(120):
+            await coordinator.async_config_entry_first_refresh()
+    except TimeoutError as err:
+        raise ConfigEntryNotReady("Timed out waiting for first data refresh") from err
 
     # Store the coordinator and AiraHome instance for the platforms to use
     hass.data[DOMAIN][entry.entry_id] = {

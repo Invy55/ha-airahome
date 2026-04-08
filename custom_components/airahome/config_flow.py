@@ -22,6 +22,7 @@ import voluptuous as vol
 from . import async_get_translation
 from .const import (
     BLE_COMMAND_SLEEP,
+    BLE_CONNECT_TIMEOUT,
     CONF_CERTIFICATE,
     CONF_CLOUD_EMAIL,
     CONF_CLOUD_PASSWORD,
@@ -383,7 +384,7 @@ class AiraHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             return False, {"error": "ble_device_not_found"}
         
         try:
-            await self._aira.ble._connect_device(ble_device)
+            await self._aira.ble._connect_device(ble_device, timeout=BLE_CONNECT_TIMEOUT)
             installation = {}
 
             # detect phases by checking if phase 1 & 2 voltage/current have any non-zero values

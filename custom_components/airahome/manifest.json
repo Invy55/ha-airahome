@@ -16,7 +16,7 @@
   "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
   "loggers": ["pyairahome"],
   "requirements": [
-    "pyairahome==2.2.4"
+    "pyairahome==2.2.5"
   ],
   "version": "1.0.0"
 }

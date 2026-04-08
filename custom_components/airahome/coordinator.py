@@ -29,6 +29,13 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+_CACHE_ERROR_PATTERNS = ("not permitted", "invalid handle", "attribute not found")
+
+def _is_cache_error(err: Exception) -> bool:
+    """Attempt to determine if the exception could be caused by a stale GATT cache."""
+    return any(p in str(err).lower() for p in _CACHE_ERROR_PATTERNS)
+
+
 class AiraDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Aira data from BLE."""
 
@@ -55,6 +62,7 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         self._reconnect_attempts = 0
         self._max_reconnect_attempts = 5
         self._next_reconnect_at: float = 0.0  # perf_counter timestamp for next allowed reconnect
+        self._needs_cache_clear: bool = False
 
         # Timing and success tracking
         self._last_successful_data = None
@@ -90,6 +98,8 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             state_data = await self.aira.ble._get_states() # type: ignore[reportAssignmentType]
         except Exception as err:
             _LOGGER.warning("Failed to fetch state data: %s", err)
+            if _is_cache_error(err):
+                self._needs_cache_clear = True
 
         await asyncio.sleep(BLE_COMMAND_SLEEP) # ensure BLE_COMMAND_SLEEP between calls
 
@@ -97,6 +107,8 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             system_check_state = await self.aira.ble._get_system_check_state() # type: ignore
         except Exception as err:
             _LOGGER.warning("Failed to fetch system check state: %s", err)
+            if _is_cache_error(err):
+                self._needs_cache_clear = True
 
         if state_data is None and system_check_state is None:
             raise UpdateFailed("Both BLE data fetches failed")
@@ -157,9 +169,13 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             # First, explicitly disconnect to clean up any stale connection state
             _LOGGER.debug("Disconnecting before reconnection attempt")
             try:
-                await aira.ble._disconnect()
+                if self._needs_cache_clear:
+                    _LOGGER.info("Clearing GATT cache before reconnect due to suspected stale cache error")
+                await aira.ble._disconnect(clean_cache=self._needs_cache_clear)
             except Exception as disc_err:
                 _LOGGER.debug("Disconnect during reconnect raised: %s (nothing to worry about)", disc_err)
+            finally:
+                self._needs_cache_clear = False
             
             # Small delay to let the BLE stack stabilize
             await asyncio.sleep(0.5)
@@ -183,6 +199,8 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 )
             except Exception as conn_err:
                 _LOGGER.error("Reconnection attempt raised exception: %s", conn_err)
+                if _is_cache_error(conn_err):
+                    self._needs_cache_clear = True
                 success = False
         except Exception as err:
             _LOGGER.error("Unexpected error during reconnection attempt: %s", err, exc_info=True)
@@ -224,10 +242,13 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                     rssi = service_info.rssi
             except Exception:
                 # Fallback: try getting from device
-                rssi = await self.hass.async_add_executor_job(
-                    self.aira.ble.get_rssi
-                )
-                _LOGGER.debug("Fallback RSSI fetch used")
+                try:
+                    async with asyncio.timeout(5):
+                        rssi = await self.aira.ble._get_rssi()
+                except TimeoutError:
+                    _LOGGER.debug("Fallback RSSI fetch timed out")
+                else:
+                    _LOGGER.debug("Fallback RSSI fetch used")
 
             if not is_connected:
                 _LOGGER.warning("Device not connected. Raising UpdateFailed to trigger reconnect logic.")
