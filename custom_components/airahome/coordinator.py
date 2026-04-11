@@ -2,23 +2,38 @@
 from __future__ import annotations
 
 import asyncio
-import logging
-from typing import Any
-from functools import partial
+from copy import deepcopy
 from datetime import timedelta
+import logging
 from time import perf_counter
+from typing import Any
 
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from pyairahome import AiraHome
+
+from .const import (
+    BLE_COMMAND_SLEEP,
+    BLE_CONNECT_TIMEOUT,
+    BLE_RECONNECT_BACKOFF,
+    CONF_DEVICE_NAME,
+    CONF_MAC_ADDRESS,
+    DEFAULT_DATA,
+    DEFAULT_SHORT_NAME,
+    DOMAIN,
+    STALE_DATA_THRESHOLD,
 )
 
-from .const import CONF_DEVICE_NAME, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN, STALE_DATA_THRESHOLD
 
 _LOGGER = logging.getLogger(__name__)
+
+_CACHE_ERROR_PATTERNS = ("not permitted", "invalid handle", "attribute not found")
+
+def _is_cache_error(err: Exception) -> bool:
+    """Attempt to determine if the exception could be caused by a stale GATT cache."""
+    return any(p in str(err).lower() for p in _CACHE_ERROR_PATTERNS)
 
 
 class AiraDataUpdateCoordinator(DataUpdateCoordinator):
@@ -28,9 +43,9 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        aira: Any,
-        update_interval: int = 10,
-        reconnect_callback: Any | None = None,
+        aira: AiraHome,
+        update_interval: int = 30,
+        mac_address: str | None = None
     ) -> None:
         """Initialise coordinator."""
         super().__init__(
@@ -41,375 +56,265 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self.config_entry = entry
         self.aira = aira
-        self.reconnect_callback = reconnect_callback
+        self.mac_address = mac_address
+        self._is_connected = True # start with connected true since we connected in the init
+        self._reconnect_task: asyncio.Task | None = None
         self._reconnect_attempts = 0
-        self._max_reconnect_attempts = 3
-        self._consecutive_failures = 0
-        self._max_consecutive_failures = 3  # Reconnect after 3 consecutive failures
-        self._update_interval_seconds = update_interval
-        # Use monotonic perf_counter for timing to avoid system clock jumps
-        self._last_update_time = None
+        self._max_reconnect_attempts = 5
+        self._next_reconnect_at: float = 0.0  # perf_counter timestamp for next allowed reconnect
+        self._needs_cache_clear: bool = False
+
+        # Timing and success tracking
         self._last_successful_data = None
         self._last_successful_timestamp = None
         
-        # Initialize with empty but valid data structure to prevent sensor crashes
-        self.data = {
-            "state": {},
-            # "flow_data": {},
-            "system_check": {},
-            "connected": False,
-            "rssi": None,
-        }
+        # Initialize coordinator data with empty but valid data structure to prevent sensor crashes
+        self.data = deepcopy(DEFAULT_DATA)
+
+    def _calculate_scheduled_hot_water_temperature(self, state_dict: dict) -> float | None:
+        """Calculate the scheduled hot water temperature from scheduler active actions."""
+        try:
+            scheduler = state_dict.get("scheduler", {})
+            if not scheduler:
+                return state_dict.get("target_hot_water_temperature")
+            active_actions = scheduler.get("active_actions", [])
+            if not active_actions:
+                return state_dict.get("target_hot_water_temperature")
+            for action in active_actions:
+                if "set_dhw_setpoint" in action:
+                    dhw_temp = action["set_dhw_setpoint"].get("temperature")
+                    if dhw_temp is not None:
+                        return float(dhw_temp)
+            return state_dict.get("target_hot_water_temperature")
+        except (KeyError, ValueError, TypeError):
+            return None
 
     async def _fetch_all_data(self, start_time: float, rssi: int | None) -> dict[str, Any]:
-        state_data = await self.hass.async_add_executor_job(
-            partial(self.aira.ble.get_states, raw=False)
-        )
+        """Fetch all data from the Aira device via BLE."""
+        state_data: dict | None = None
+        system_check_state: dict | None = None
 
-        #await asyncio.sleep(0.5)  # Small delay to avoid overwhelming the device
-        #flow_data = await self.hass.async_add_executor_job(
-        #    partial(self.aira.ble.get_flow_data, raw=False)
-        #)
+        try:
+            state_data = await self.aira.ble._get_states() # type: ignore[reportAssignmentType]
+        except Exception as err:
+            _LOGGER.warning("Failed to fetch state data: %s", err)
+            if _is_cache_error(err):
+                self._needs_cache_clear = True
 
-        await asyncio.sleep(1.0)  # Small delay to avoid overwhelming the device
-        system_check = await self.hass.async_add_executor_job(
-            partial(self.aira.ble.get_system_check_state, raw=False)
-        )
-        
-        # Reset reconnect attempts and failure counter on successful data fetch
-        self._reconnect_attempts = 0
-        self._consecutive_failures = 0
-        
+        await asyncio.sleep(BLE_COMMAND_SLEEP) # ensure BLE_COMMAND_SLEEP between calls
+
+        try:
+            system_check_state = await self.aira.ble._get_system_check_state() # type: ignore
+        except Exception as err:
+            _LOGGER.warning("Failed to fetch system check state: %s", err)
+            if _is_cache_error(err):
+                self._needs_cache_clear = True
+
+        if state_data is None and system_check_state is None:
+            raise UpdateFailed("Both BLE data fetches failed")
+
         elapsed = perf_counter() - start_time
         _LOGGER.debug("BLE data fetch completed in %.1f seconds", elapsed)
-        
-        # Calculate wait time to ensure next update starts interval seconds after completion
-        # If last update finished at T=35 and interval is 10, next should start at T=45
-        if self._last_update_time is not None:
-            time_since_last = perf_counter() - self._last_update_time
-            if time_since_last < self._update_interval_seconds:
-                wait_time = self._update_interval_seconds - time_since_last
-                _LOGGER.debug(
-                    "Waiting %.1f seconds before allowing next update (interval from completion)",
-                    wait_time
-                )
-                await asyncio.sleep(wait_time)
                         
         # Build result, merging with stale data if some fetches failed
         state_dict = state_data.get("state", {}) if state_data else {}
-        #flow_dict = flow_data.get("main_pump_flow", {}) if flow_data else {}
-        system_dict = system_check.get("system_check_state", {}) if system_check else {}
+        system_dict = system_check_state.get("system_check_state", {}) if system_check_state else {}
 
-        successful = True
+        successful = 2
         # If we have stale data and current fetch returned empty, use stale values
-        if self._last_successful_data and perf_counter() - self._last_successful_timestamp < STALE_DATA_THRESHOLD:
-            if (not state_dict and self._last_successful_data.get("state")) or (state_data and state_data.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
+        if self._last_successful_data and perf_counter() - self._last_successful_timestamp < STALE_DATA_THRESHOLD: # type: ignore
+            # Handle empty result or aira errors
+            if (not state_dict and self._last_successful_data.get("state")) or \
+               (state_data and state_data.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
                 state_dict = self._last_successful_data["state"]
-                successful = False
-                _LOGGER.debug("Using stale state data due to empty fetch")
-            #if not flow_dict and self._last_successful_data.get("flow_data"):
-            #    flow_dict = self._last_successful_data["flow_data"]
-            #    _LOGGER.debug("Using stale flow data due to empty fetch")
-            if (not system_dict and self._last_successful_data.get("system_check")) or (system_check and system_check.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"): # if dict is empty or it has some errors
-                system_dict = self._last_successful_data["system_check"]
-                _LOGGER.debug("Using stale system_check data due to empty fetch")
+                successful -= 1
+                _LOGGER.debug("Using stale state data due to empty fetch or error")
 
-        # Record completion time for next cycle (monotonic)
-        self._last_update_time = perf_counter()
+            if (not system_dict and self._last_successful_data.get("system_check_state")) or \
+               (system_check_state and system_check_state.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
+                system_dict = self._last_successful_data["system_check_state"]
+                successful -= 1
+                _LOGGER.debug("Using stale system_check data due to empty fetch or error")
+
+        state_dict["scheduled_hot_water_temperature"] = self._calculate_scheduled_hot_water_temperature(state_dict)
 
         result = {
             "state": state_dict,
-            #"flow_data": flow_dict,
-            "system_check": system_dict,
+            "system_check_state": system_dict,
             "connected": True,
             "rssi": rssi,
         }
         
         # Only store as successful if we actually got some real data
         # Check if at least state data has content (it's the most important)
-        if successful:
+        if successful == 2:
+            # Reset reconnect attempts and backoff only when we got clean complete data from both calls
+            self._reconnect_attempts = 0
+            self._next_reconnect_at = 0.0
             self._last_successful_data = result
             # Record monotonic timestamp for age checks
             self._last_successful_timestamp = perf_counter()
             _LOGGER.info("Data fetch successful, updated last_successful_data")
         else:
-            _LOGGER.warning("Data fetch returned empty state, not updating last_successful_data")
+            _LOGGER.warning("Data fetch returned empty state or error, leaving last_successful_data as is")
         
         return result
+
+    async def _async_reconnect(self) -> None:
+        """Attempt to reconnect to the device. This runs in a background task scheduled by _schedule_reconnect."""
+        aira = self.aira
+        mac_address: str = self.mac_address # type: ignore # This is already checked in init
+
+        try:
+            # First, explicitly disconnect to clean up any stale connection state
+            _LOGGER.debug("Disconnecting before reconnection attempt")
+            try:
+                if self._needs_cache_clear:
+                    _LOGGER.info("Clearing GATT cache before reconnect due to suspected stale cache error")
+                await aira.ble._disconnect(clean_cache=self._needs_cache_clear)
+            except Exception as disc_err:
+                _LOGGER.debug("Disconnect during reconnect raised: %s (nothing to worry about)", disc_err)
+            finally:
+                self._needs_cache_clear = False
+            
+            # Small delay to let the BLE stack stabilize
+            await asyncio.sleep(0.5)
+            
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, mac_address, connectable=True
+            )
+            if not ble_device:
+                _LOGGER.error(
+                    "Device %s not found in Home Assistant's bluetooth during reconnect attempt.",
+                    mac_address
+                )
+                return
+             
+            _LOGGER.info("Attempting reconnection to %s", ble_device.name)
+            try:
+                # Use standard connection (has built-in retry logic)
+                success = await aira.ble._connect_device(
+                    ble_device,
+                    timeout=BLE_CONNECT_TIMEOUT
+                )
+            except Exception as conn_err:
+                _LOGGER.error("Reconnection attempt raised exception: %s", conn_err)
+                if _is_cache_error(conn_err):
+                    self._needs_cache_clear = True
+                success = False
+        except Exception as err:
+            _LOGGER.error("Unexpected error during reconnection attempt: %s", err, exc_info=True)
+            success = False
+
+        if success:
+            _LOGGER.info("Reconnected to Aira device via BLE successfully")
+            self._is_connected = True
+        else:
+            _LOGGER.warning("Reconnection attempt to Aira device via BLE failed")
+            self._is_connected = False        
+
+    def _schedule_reconnect(self) -> None:
+        """Schedule a reconnect attempt in a background task."""
+        if self._reconnect_task and not self._reconnect_task.done():
+            return  # already scheduled
+
+        self._reconnect_task = self.hass.async_create_task(
+            self._async_reconnect()
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from Aira device via BLE."""
         start_time = perf_counter()
-        
+
+        mac_address: str = self.mac_address # type: ignore # This is already checked in init
+        is_connected = self._is_connected
+
+        rssi = None
+
         try:
-            # Check connection
-            is_connected = await self.hass.async_add_executor_job(
-                self.aira.ble.is_connected
-            )
-            
             # Get RSSI from Home Assistant's bluetooth integration
-            rssi = None
             try:
-                mac_address = self.hass.data[DOMAIN][self.config_entry.entry_id].get(CONF_MAC_ADDRESS)
-            except (KeyError, AttributeError):
-                # Entry not yet in hass.data during first setup
-                mac_address = self.config_entry.data.get(CONF_MAC_ADDRESS)
-            if mac_address:
+                # Get service info which contains RSSI
+                service_info = bluetooth.async_last_service_info(
+                    self.hass, mac_address, connectable=True
+                )
+                if service_info and service_info.rssi is not None:
+                    rssi = service_info.rssi
+            except Exception:
+                # Fallback: try getting from device
                 try:
-                    # Get service info which contains RSSI
-                    service_info = bluetooth.async_last_service_info(
-                        self.hass, mac_address, connectable=True
-                    )
-                    if service_info and service_info.rssi is not None:
-                        rssi = service_info.rssi
-                except Exception:
-                    # Fallback: try getting from device
-                    rssi = await self.hass.async_add_executor_job(
-                        self.aira.ble.get_rssi
-                    )
+                    async with asyncio.timeout(5):
+                        rssi = await self.aira.ble._get_rssi()
+                except TimeoutError:
+                    _LOGGER.debug("Fallback RSSI fetch timed out")
+                else:
                     _LOGGER.debug("Fallback RSSI fetch used")
+
             if not is_connected:
-                if self._reconnect_attempts < self._max_reconnect_attempts:
+                _LOGGER.warning("Device not connected. Raising UpdateFailed to trigger reconnect logic.")
+                raise UpdateFailed("Device not connected")
+
+            # Fetch data
+            try:
+                # get all data and return it
+                data =  await self._fetch_all_data(start_time, rssi)
+                _LOGGER.debug("Gathered data in %.1f seconds", perf_counter() - start_time)
+                return data
+            except Exception as data_err:
+                _LOGGER.error("Error fetching data: %s", data_err)
+                raise UpdateFailed from data_err
+            
+        except Exception as err:
+            # Attempt to reconnect if not connected
+            if is_connected: # for the future: check if this is the best approach or we should check specific exceptions
+                _LOGGER.error("Unexpected error during data update: %s. Considering disconnected", err, exc_info=True)
+                self._is_connected = False
+                is_connected = False
+
+            # Device is not connected, return stale data if available
+            stale_result = deepcopy(DEFAULT_DATA)
+            if self._last_successful_data and self._last_successful_timestamp:
+                age = start_time - self._last_successful_timestamp
+                if age < STALE_DATA_THRESHOLD:
                     _LOGGER.debug(
-                        "Not connected, attempting reconnect (attempt %d/%d)",
+                        "Not connected, returning stale data (age: %.0f seconds)",
+                        age
+                    )
+                    # Return last good data but mark as disconnected
+                    stale_result = deepcopy(self._last_successful_data)
+                    stale_result["connected"] = False
+                    stale_result["rssi"] = rssi  # Update RSSI even if using stale data
+
+            # Device is not connected, attempt reconnection with exponential backoff
+            if self._reconnect_attempts < self._max_reconnect_attempts:
+                now = perf_counter()
+                if now >= self._next_reconnect_at:
+                    _LOGGER.debug(
+                        "Not connected, scheduling reconnect (attempt %d/%d)",
                         self._reconnect_attempts + 1,
                         self._max_reconnect_attempts
                     )
-                    if self.reconnect_callback:
-                        is_connected = await self.reconnect_callback()
-                        if is_connected:
-                            _LOGGER.info("Successfully reconnected to device")
-                            # Reset counters on successful reconnect
-                            self._reconnect_attempts = 0
-                            self._consecutive_failures = 0
-                        else:
-                            self._reconnect_attempts += 1
-                            _LOGGER.warning("Reconnect attempt failed")
-                    else:
-                        _LOGGER.warning("No reconnect callback available")
+                    self._schedule_reconnect()
+                    delay = BLE_RECONNECT_BACKOFF[min(self._reconnect_attempts, len(BLE_RECONNECT_BACKOFF) - 1)]
+                    self._next_reconnect_at = now + delay
+                    self._reconnect_attempts += 1
                 else:
-                    _LOGGER.error(
-                        "Max reconnect attempts (%d) reached, skipping update",
-                        self._max_reconnect_attempts
+                    _LOGGER.debug(
+                        "Backoff active, next reconnect in %.0f seconds",
+                        self._next_reconnect_at - now
                     )
-                    # Reset counter for next update cycle
-                    self._reconnect_attempts = 0
-                    # TODO PROBABLY RAISE AND STOP HERE
-            
-            # If not connected, check if we have recent stale data to return
-                if self._last_successful_data and self._last_successful_timestamp:
-                    age = perf_counter() - self._last_successful_timestamp
-                    if age < STALE_DATA_THRESHOLD:
-                        _LOGGER.debug(
-                            "Not connected, returning stale data (age: %.0f seconds)",
-                            age
-                        )
-                        # Return last good data but mark as disconnected
-                        stale_result = self._last_successful_data.copy()
-                        stale_result["connected"] = False
-                        stale_result["rssi"] = rssi  # Update RSSI even if using stale data
-                        return stale_result
-                
-                # Not connected and no fresh stale data - keep existing coordinator state
-                _LOGGER.warning("Not connected and no stale data made available.")
-                if self.data and len(self.data.keys()) > 0:
-                    # Return  disconnected, do not keep old data to avoid prolonged stale readings
-                    #result = self.data.copy()
-                    result = {}
-                    result["connected"] = False
-                    result["rssi"] = rssi if rssi else None
-                    return result
-                
-                # Only raise UpdateFailed on very first connection when we have no data at all
-                _LOGGER.error("Initial connection failed with no data available")
-                raise UpdateFailed("Device disconnected and no initial data available")
-                        
-            # Fetch all data types with timeout handling
-            try:
-                # get all data and return it
-                return await self._fetch_all_data(start_time, rssi)
-            except (EOFError, BrokenPipeError, ConnectionError, TimeoutError) as conn_err:
-                # BLE connection is dead or timed out - attempt reconnection immediately
-                error_type = "timeout" if isinstance(conn_err, TimeoutError) else "connection error"
-                _LOGGER.error("BLE %s: %s", error_type, conn_err)
-                
-                # Try to reconnect and retry the fetch
-                if self.reconnect_callback:
-                    _LOGGER.info("Attempting immediate reconnection...")
-                    try:
-                        reconnected = await self.reconnect_callback()
-                        if reconnected:
-                            _LOGGER.info("Reconnected successfully, retrying data fetch...")
-                            # Reset failure counter and try again
-                            self._consecutive_failures = 0
-                            # Retry the data fetch
-                            try:
-                                # get all data and return it
-                                return await self._fetch_all_data(start_time, rssi)
-                            except Exception as retry_err:
-                                _LOGGER.warning("Retry after reconnection failed: %s", retry_err)
-                    except Exception as reconn_err:
-                        _LOGGER.error("Reconnection attempt failed: %s", reconn_err)
-                
-                # Reconnection failed or retry failed - fall back to stale data
-                if self._last_successful_data and self._last_successful_timestamp:
-                    age = perf_counter() - self._last_successful_timestamp
-                    if age < STALE_DATA_THRESHOLD:
-                        _LOGGER.info(
-                            "Connection lost and retry failed, returning stale data (age: %.0f seconds)",
-                            age
-                        )
-                        stale_result = self._last_successful_data.copy()
-                        stale_result["connected"] = False
-                        stale_result["rssi"] = rssi if rssi else None
-                        return stale_result
-                
-                # No fresh stale data, sensors will go unavailable but it's better than prolonged stale readings
-                _LOGGER.warning("Connection lost, retry failed, and no stale data available")
-                if self.data and self.data.get("state"):
-                    # Return disconnected
-                    #result = self.data.copy()
-                    result = {}
-                    result["connected"] = False
-                    result["rssi"] = None
-                    return result
-                
-                # Only raise UpdateFailed on very first update when we have no data at all
-                _LOGGER.error("First update failed with no initial data available")
-                raise UpdateFailed(f"Initial connection failed: {conn_err}")
-                
-            except Exception as data_err:
-                # Check if this is a Bleak DBus error (stale connection)
-                error_type = type(data_err).__name__
-                error_str = str(data_err)
-                error_module = type(data_err).__module__
-                
-                # Detect BleakDBusError, GATT errors, or event loop conflicts
-                is_connection_error = (
-                    "BleakDBusError" in error_type or
-                    "bleak.exc" in error_module or
-                    "org.bluez.GattCharacteristic" in error_str or
-                    "org.freedesktop.DBus.Error.UnknownObject" in error_str or
-                    ("RuntimeError" in error_type and "different loop" in error_str) or
-                    "Out of memory" in error_str
+            else:
+                # Max attempts reached -> schedule a full entry reload so HA cleanly tears down BLE,
+                # re-runs async_setup_entry and retries with native ConfigEntryNotReady backoff.
+                # See https://github.com/Invy55/ha-airahome/wiki/Bluetooth-Issues
+                _LOGGER.error(
+                    "Max reconnect attempts (%d) reached, scheduling entry reload.",
+                    self._max_reconnect_attempts
                 )
-                
-                # Log at WARNING level so we can see what's happening
-                _LOGGER.warning(
-                    "Error detection - Type: %s, Module: %s, IsConnectionError: %s, Message: %s", 
-                    error_type, error_module, is_connection_error, error_str
+                self._reconnect_attempts = 0
+                self._next_reconnect_at = 0.0
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_reload(self.config_entry.entry_id)
                 )
-                
-                if is_connection_error:
-                    # GATT characteristic doesn't exist - connection is stale, attempt reconnection
-                    _LOGGER.error("BLE GATT error (stale connection): %s", data_err)
-                    
-                    # Try to reconnect and retry the fetch
-                    if self.reconnect_callback:
-                        _LOGGER.info("Attempting immediate reconnection after GATT error...")
-                        try:
-                            reconnected = await self.reconnect_callback()
-                            if reconnected:
-                                _LOGGER.info("Reconnected successfully, retrying data fetch...")
-                                self._consecutive_failures = 0
-                                # Retry the data fetch
-                                try:
-                                    # get all data and return it
-                                    return await self._fetch_all_data(start_time, rssi)
-                                except Exception as retry_err:
-                                    _LOGGER.warning("Retry after GATT error reconnection failed: %s", retry_err)
-                        except Exception as reconn_err:
-                            _LOGGER.error("Reconnection after GATT error failed: %s", reconn_err)
-                    
-                    # Reconnection failed or retry failed - fall back to stale data
-                    if self._last_successful_data and self._last_successful_timestamp:
-                        age = perf_counter() - self._last_successful_timestamp
-                        if age < STALE_DATA_THRESHOLD:
-                            _LOGGER.info(
-                                "GATT error and retry failed, returning stale data (age: %.0f seconds)",
-                                age
-                            )
-                            stale_result = self._last_successful_data.copy()
-                            stale_result["connected"] = False
-                            stale_result["rssi"] = rssi if rssi else None
-                            return stale_result
-                    
-                    # No fresh stale data
-                    _LOGGER.warning("GATT error, retry failed, and no stale data available")
-                    if self.data and self.data.get("state"):
-                        # Return disconnected
-                        #result = self.data.copy()
-                        result = {}
-                        result["connected"] = False
-                        result["rssi"] = None
-                        return result
-                    
-                    # Only raise UpdateFailed on very first update when we have no data at all
-                    _LOGGER.error("First update failed with GATT error and no initial data available")
-                    raise UpdateFailed(f"Initial GATT error: {data_err}")
-                
-                # Regular timeout/error - increment failure counter
-                _LOGGER.warning("Failed to fetch data from device: %s", data_err, exc_info=True)
-                self._consecutive_failures += 1
-                _LOGGER.debug("Consecutive failures: %d/%d", self._consecutive_failures, self._max_consecutive_failures)
-                
-                # Check if we have recent stale data to return
-                if self._last_successful_data and self._last_successful_timestamp:
-                    age = perf_counter() - self._last_successful_timestamp
-                    if age < STALE_DATA_THRESHOLD:
-                        _LOGGER.info(
-                            "Data fetch error, returning stale data (age: %.0f seconds)",
-                            age
-                        )
-                        stale_result = self._last_successful_data.copy()
-                        stale_result["connected"] = False
-                        stale_result["rssi"] = rssi if rssi else None
-                        return stale_result
-                
-                # No fresh stale data
-                _LOGGER.warning("Data fetch failed and no stale data available - maintaining last coordinator state")
-                if self.data and self.data.get("state"):
-                    # Return disconnected
-                    #result = self.data.copy()
-                    result = {}
-                    result["connected"] = False
-                    result["rssi"] = None
-                    return result
-                
-                # Only raise UpdateFailed on very first update when we have no data at all
-                _LOGGER.error("First update failed with no initial data available")
-                raise UpdateFailed(f"Initial data fetch failed: {data_err}")
             
-        except Exception as err:
-            _LOGGER.error("Error in coordinator update: %s", err, exc_info=True)
-            
-            # Increment consecutive failure counter
-            self._consecutive_failures += 1
-            _LOGGER.debug("Consecutive failures: %d/%d", self._consecutive_failures, self._max_consecutive_failures)
-            
-            # Check if we have recent stale data to return
-            if self._last_successful_data and self._last_successful_timestamp:
-                age = perf_counter() - self._last_successful_timestamp
-                if age < STALE_DATA_THRESHOLD:
-                    _LOGGER.info(
-                        "Coordinator error, returning stale data (age: %.0f seconds)",
-                        age
-                    )
-                    stale_result = self._last_successful_data.copy()
-                    stale_result["connected"] = False
-                    stale_result["rssi"] = None
-                    return stale_result
-            
-            # No fresh stale data
-            _LOGGER.warning("Coordinator error and no stale data available")
-            if self.data and self.data.get("state"):
-                # Return disconnected
-                #result = self.data.copy()
-                result = {}
-                result["connected"] = False
-                result["rssi"] = None
-                return result
-            
-            # Only raise UpdateFailed on very first update when we have no data at all
-            _LOGGER.error("First coordinator update failed with no initial data available")
-            raise UpdateFailed(f"Initial coordinator error: {err}")
+            return stale_result

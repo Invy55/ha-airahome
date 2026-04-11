@@ -1,21 +1,22 @@
 {
   "domain": "airahome",
   "name": "AiraHome",
-  "codeowners": ["@invy55", "@pavlick"],
-  "config_flow": true,
-  "documentation": "https://github.com/invy55/ha-airahome",
-  "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
-  "integration_type": "device",
-  "requirements": [
-    "pyairahome==2.1.2"
-  ],
-  "version": "0.2.2",
   "bluetooth": [
     {
-      "connectable": true
+      "connectable": true,
+      "manufacturer_id": 65535
     }
   ],
-  "dependencies": ["bluetooth"],
-  "after_dependencies": ["bluetooth", "esphome"]
+  "codeowners": ["@invy55", "@pavlick"],
+  "config_flow": true,
+  "dependencies": ["bluetooth_adapters"],
+  "documentation": "https://github.com/invy55/ha-airahome",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
+  "loggers": ["pyairahome"],
+  "requirements": [
+    "pyairahome==2.2.5"
+  ],
+  "version": "1.0.0"
 }

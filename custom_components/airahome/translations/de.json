@@ -1,0 +1,302 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "An der Aira Cloud anmelden",
+        "description": "Gib deine **Aira-Konto-Zugangsdaten** ein, um deine verfügbaren Geräte aufzulisten. Dies ist erforderlich, da im Konto der Schlüssel gespeichert ist, der benötigt wird, um Daten über BLE auf das Gerät zuzugreifen.\n_Deine Zugangsdaten werden nur verwendet, um diesen Schlüssel abzurufen, und werden nicht gespeichert_",
+        "data": {
+          "cloud_email": "E-Mail",
+          "cloud_password": "Passwort"
+        }
+      },
+      "select_device": {
+        "title": "Gerät auswählen",
+        "description": "Es wurden **{device_count} Gerät(e)** in deinem Aira-Konto gefunden. Wähle das Gerät aus, das du hinzufügen möchtest.\nWenn dein Gerät nicht aufgeführt ist, stelle sicher, dass es in deinem Aira-Konto registriert ist. (Derzeit werden nur Wärmepumpen unterstützt)",
+        "data": {
+          "device": "Gefundene Geräte:"
+        }
+      },
+      "configure": {
+        "title": "Geräteeinstellungen",
+        "description": "Lege fest, wie oft Daten von deinem Gerät abgerufen werden sollen. Standardmäßig sind es **{default_interval} Sekunden**. Niedrige Werte ermöglichen schnellere Aktualisierungen, können aber auch zu Fehlern führen.\nPasse die **Anzahl der Zonen** und die **Anzahl der Phasen** an, falls die falschen Werte übernommen wurden.",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)",
+          "num_zones": "Anzahl der Zonen (1 oder 2)",
+          "num_phases": "Anzahl der Phasen (1 oder 3)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Gerät fehlgeschlagen. Bitte überprüfe die MAC-Adresse und stelle sicher, dass das Gerät eingeschaltet und in Reichweite ist.",
+      "invalid_mac": "Ungültiges Format der MAC-Adresse. Bitte verwende das Format XX:XX:XX:XX:XX:XX",
+      "invalid_auth": "Ungültige E-Mail oder ungültiges Passwort. Bitte überprüfe deine Zugangsdaten.",
+      "no_devices_found": "Keine Geräte in deinem Aira-Konto gefunden.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten, bitte versuche es erneut oder überprüfe die Protokolle.",
+      "cloud_timeout": "Der Cloud-Dienst hat nicht rechtzeitig geantwortet. Bitte versuche es später noch einmal.",
+      "cloud_unavailable": "Der Cloud-Dienst ist derzeit nicht verfügbar. Bitte versuche es später noch einmal.",
+      "cloud_error": "Ein Fehler ist bei der Kommunikation mit dem Cloud-Dienst aufgetreten. Bitte versuche es später noch einmal."
+    },
+    "abort": {
+      "already_in_progress": "Es läuft bereits ein Aira Einrichtungsprozess. Dies kann passieren, wenn Home Assistant es bereits über Bluetooth gefunden hat — bitte überprüfe die entdeckten Integrationen auf der Geräteseite.",
+      "unsupported_device": "Das ausgewählte Gerät wird nicht unterstützt. Derzeit können nur Aira-Wärmepumpen konfiguriert werden.",
+      "already_configured": "Dieses Gerät ist bereits konfiguriert. Bitte wähle ein anderes Gerät aus.",
+      "no_devices_found": "Alle in deinem Aira-Konto verfügbaren Geräte sind bereits konfiguriert. Es gibt keine neuen Geräte zum Hinzufügen.",
+      "bluetooth_unavailable": "Bluetooth ist nicht verfügbar. Bitte stelle sicher, dass Bluetooth auf deinem Home Assistant-Host aktiviert ist.",
+      "device_not_found": "Ungültiges Gerät. Das ausgewählte Gerät wurde nicht in deinem Aira-Konto gefunden. Stelle sicher, dass das Gerät in deinem Konto registriert ist.",
+      "ble_device_not_found": "BLE-Gerät nicht gefunden. Stelle sicher, dass dein Aira-Gerät eingeschaltet und in Bluetooth-Reichweite (5-15m) ist. Wenn das Gerät zu weit entfernt ist, versuche, einen Bluetooth-Adapter oder Bluetooth-Repeater wie ESPHome zu verwenden.",
+      "cannot_connect": "Verbindung zum ausgewählten Gerät fehlgeschlagen. Bitte stelle sicher, dass dein Aira-Gerät eingeschaltet und in Reichweite ist.",
+      "not_aira_device": "Das entdeckte Gerät ist kein Aira-Gerät. Derzeit können nur Aira-Wärmepumpen konfiguriert werden.",
+      "unknown": "Ein unerwarteter Fehler ist bei der Einrichtung aufgetreten."
+    }
+  },
+  "exceptions": {
+    "temperature_not_provided": {
+      "message": "Temperatur nicht angegeben. Bitte gib eine Temperatur in °C an."
+    },
+    "invalid_temperature": {
+      "message": "Die gesetzte Temeratur {temperature}°C entspricht nicht einer der vorgegebenen Temperaturen: {allowed_temperatures}°C. Verwende die Tasten + / - für einere genauere Anpassung."
+    },
+    "scheduler_active": {
+      "message": "Temperatur kann nicht eingestellt werden, während der Zeitplan aktiv ist. Bitte deaktiviere zuerst den Zeitplan."
+    },
+    "unsupported_set_temp": {
+      "message": "Kann die Temperatur für {hvac_mode} nicht einstellen, wenn die Wärmepumpe im Modus {pump_mode_state} ist."
+    },
+    "temperature_out_of_range": {
+      "message": "Temperatur {temperature}°C ist außerhalb des Bereichs. Muss zwischen {min_temp}°C und {max_temp}°C liegen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gerät konfigurieren",
+        "description": "Aktualisiere die Einstellungen für dein Aira-Gerät.\nPasse das **Aktualisierungsintervall** an, um zu ändern, wie oft Daten von deinem Gerät abgerufen werden. Niedrigere Werte bieten häufigere Aktualisierungen, können aber mehr Fehler verursachen.\nÄndere die **Anzahl der Zonen** und die **Anzahl der Phasen**, falls die erkannten Werte falsch sind.",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)",
+          "num_zones": "Anzahl der Zonen (1 oder 2)",
+          "num_phases": "Anzahl der Phasen (1 oder 3)"
+        },
+        "data_description": {}
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "hot_water_temp": { "name": "Warmwassertemperatur" },
+      "target_hot_water_temp": { "name": "Warmwasser-Zieltemperatur" },
+      "scheduled_temp": { "name": "Geplante Warmwassertemperatur" },
+      "outdoor_temp": { "name": "Außentemperatur" },
+      "indoor_supply_temp": { "name": "Vorlauftemperatur der Inneneinheit" },
+      "calculated_supply_temp": { "name": "Berechnete Vorlauftemperatur" },
+      "ou_supply_temp": { "name": "Außeneinheit-Vorlauftemperatur" },
+      "ou_return_temp": { "name": "Außeneinheit-Rücklauftemperatur" },
+      "evaporator_coil_temp": { "name": "Außeneinheit-Verdampferspulentemperatur" },
+      "gas_discharge_temp": { "name": "Außeneinheit-Heißgastemperatur" },
+      "gas_return_temp": { "name": "Außeneinheit-Gasrücklauftemperatur" },
+      "condensing_temp": { "name": "Außeneinheit-Kondensatortemperatur" },
+      "evaporating_temp": { "name": "Außeneinheit-Verdampfertemperatur" },
+      "inner_coil_temp": { "name": "Außeneinheit-Innere Spulentemperatur" },
+      "ou_voltage": { "name": "Außeneinheit-Spannung" },
+      "ou_current": { "name": "Außeneinheit-Stromstärke" },
+      "ou_evaporator_pressure": { "name": "Außeneinheit-Verdampferdruck" },
+      "ou_condenser_pressure": { "name": "Außeneinheit-Kondensatordruck" },
+      "ou_fan_1_speed": { "name": "Außeneinheit-Lüfter 1 Geschwindigkeit" },
+      "ou_fan_2_speed": { "name": "Außeneinheit-Lüfter 2 Geschwindigkeit" },
+      "ou_compressor_speed": { "name": "Außeneinheit-Kompressorgeschwindigkeit" },
+      "ou_compressor_freq_limit": { "name": "Außeneinheit-Kompressor-Frequenzgrenze" },
+      "ou_compressor_need": { "name": "Außeneinheit-Kompressorbedarf in Prozent" },
+      "ou_compressor_limit": { "name": "Außeneinheit-Kompressorgrenze in Prozent" },
+      "eev_step": { "name": "Schritt des elektronischen Expansionsventils" },
+      "instant_power_kw": { "name": "Aktueller Stromverbrauch (kW)" },
+      "instant_power_w": { "name": "Aktueller Stromverbrauch (W)" },
+      "dhw_instant_power_kw": { "name": "Aktueller Warmwasser-Stromverbrauch (kW)" },
+      "dhw_instant_power_w": { "name": "Aktueller Warmwasser-Stromverbrauch (W)" },
+      "hc_instant_power_kw": { "name": "Aktueller Heizen/Kühlen-Stromverbrauch (kW)" },
+      "hc_instant_power_w": { "name": "Aktueller Heizen/Kühlen-Stromverbrauch (W)" },
+      "instant_heat_kw": { "name": "Aktuelle Wärmeproduktion (kW)" },
+      "instant_heat_w": { "name": "Aktuelle Wärmeproduktion (W)" },
+      "electricity_kwh": { "name": "Gesamtstromverbrauch (kWh)" },
+      "electricity_wh": { "name": "Gesamtstromverbrauch (Wh)" },
+      "heat_kwh": { "name": "Gesamt produzierte Wärme (kWh)" },
+      "heat_wh": { "name": "Gesamt produzierte Wärme (Wh)" },
+      "energy_balance": { "name": "Energiebilanz" },
+      "flow_meter_1": { "name": "Durchfluss Primärkreislauf" },
+      "flow_meter_2": { "name": "Durchfluss Warmwasserspeicher-Einlass" },
+      "operating_status": {
+        "name": "Betriebsstatus",
+        "state": {
+          "unspecified": "Nicht spezifiziert",
+          "standby": "Standby",
+          "auto": "Auto",
+          "user_specific": "Benutzerspezifisch"
+        }
+      },
+      "active_state": {
+        "name": "Wärmepumpen-Aktivitätsstatus",
+        "state": {
+          "unspecified": "Nicht spezifiziert",
+          "idle": "Leerlauf",
+          "heating": "Heizen",
+          "cooling": "Kühlen",
+          "dhw": "Warmwasser",
+          "anti_legionella": "Anti-Legionellen",
+          "defrosting": "Abtauen"
+        }
+      },
+      "led_pattern": {
+        "name": "LED Muster",
+        "state": {
+          "unspecified": "Unbekannt",
+          "normal": "Normal",
+          "commissioning": "Inbetriebnahme",
+          "processing": "Wird verarbeitet",
+          "attention": "Achtung",
+          "away_mode": "Abwesenheitsmodus",
+          "error_unacknowledged": "Unbestätigter Fehler",
+          "error_acknowledged": "Bestätigter Fehler",
+          "confirm": "Bestätigen",
+          "black": "Aus",
+          "boosting": "Boosting",
+          "cooling": "Kühlen"
+        }
+      },
+      "system_rssi": { "name": "BLE-Signalstärke" },
+      "instant_cop": { "name": "Aktueller COP" },
+      "cumulative_cop": { "name": "Kumulativer COP" },
+      "reported_cop": { "name": "Von der Wärmepumpe gemeldeter COP" },
+      "voltage_phase_0": { "name": "Spannung Phase 0" },
+      "voltage_phase_1": { "name": "Spannung Phase 1" },
+      "voltage_phase_2": { "name": "Spannung Phase 2" },
+      "current_phase_0": { "name": "Strom Phase 0" },
+      "current_phase_1": { "name": "Strom Phase 1" },
+      "current_phase_2": { "name": "Strom Phase 2" },
+      "zone_1_supply_temp": { "name": "Zone 1 Vorlauftemperatur" },
+      "zone_1_temp": { "name": "Zone 1 Temperatur" },
+      "zone_1_humidity": { "name": "Zone 1 Luftfeuchtigkeit" },
+      "zone_1_rssi": { "name": "Zone 1 Signalstärke" },
+      "zone_1_active_state": {
+        "name": "Wärmepumpen-Zone 1 Status",
+        "state": {
+          "unspecified": "Nicht spezifiziert",
+          "idle": "Leerlauf",
+          "heating": "Heizen",
+          "cooling": "Kühlen",
+          "heating_cooling": "Heizen/Kühlen"
+        }
+      },
+      "zone_1_valve_position": { "name": "Zone 1 Ventilposition" },
+      "zone_1_calculated_supply_temp": { "name": "Zone 1 Berechnete Vorlauftemperatur" },
+      "zone_1_heat_target": { "name": "Zone 1 Heizungsziel" },
+      "zone_1_cool_target": { "name": "Zone 1 Kühlungsziel" },
+      "zone_1_heating_curve": { "name": "Zone 1 Heizkurve" },
+      "zone_1_cooling_curve": { "name": "Zone 1 Kühlkurve" },
+      "zone_2_supply_temp": { "name": "Zone 2 Vorlauftemperatur" },
+      "zone_2_temp": { "name": "Zone 2 Temperatur" },
+      "zone_2_humidity": { "name": "Zone 2 Luftfeuchtigkeit" },
+      "zone_2_rssi": { "name": "Zone 2 Signalstärke" },
+      "zone_2_active_state": {
+        "name": "Wärmepumpen-Zone 2 Status",
+        "state": {
+          "unspecified": "Nicht spezifiziert",
+          "idle": "Leerlauf",
+          "heating": "Heizen",
+          "cooling": "Kühlen",
+          "heating_cooling": "Heizen/Kühlen"
+        }
+      },
+      "zone_2_valve_position": { "name": "Zone 2 Ventilposition" },
+      "zone_2_calculated_supply_temp": { "name": "Zone 2 Berechnete Vorlauftemperatur" },
+      "zone_2_heat_target": { "name": "Zone 2 Heizungsziel" },
+      "zone_2_cool_target": { "name": "Zone 2 Kühlungsziel" },
+      "zone_2_heating_curve": { "name": "Zone 2 Heizkurve" },
+      "zone_2_cooling_curve": { "name": "Zone 2 Kühlkurve" },
+      "software_version": { "name": "Softwareversion" },
+      "ou_software_version": { "name": "Außeneinheit-Softwareversion" },
+      "platform_version": { "name": "Plattformversion" },
+      "dhw_boost_end": { "name": "Warmwasser-Boost-Ende" }
+    },
+    "binary_sensor": {
+      "connection": { "name": "Verbindungsstatus" },
+      "manual_mode": { "name": "Manueller Modus" },
+      "night_mode": { "name": "Nachtmodus" },
+      "away_mode": { "name": "Abwesenheitsmodus" },
+      "inline_heater": { "name": "Durchlauferhitzer" },
+      "dhw_heating": { "name": "Warmwasserheizung" },
+      "defrosting": { "name": "Abtauen" },
+      "ou_pump": { "name": "Außeneinheit-Primärumwälzpumpe" },
+      "alarms": { "name": "Alarme" },
+      "zone_1_circulator": { "name": "Zone 1 Umwälzpumpe" },
+      "zone_2_circulator": { "name": "Zone 2 Umwälzpumpe" },
+      "thermostat_1_low_battery": { "name": "Thermostat 1 Niedriger Batteriestand" },
+      "thermostat_2_low_battery": { "name": "Thermostat 2 Niedriger Batteriestand" }
+    },
+    "water_heater": {
+      "water_heater": { "name": "Warmwasserspeicher" }
+    },
+    "climate": {
+      "zone_1_climate": { "name": "Zone 1" },
+      "zone_2_climate": { "name": "Zone 2" }
+    }
+  },
+  "services": {
+    "deactivate_dhw_boost": {
+      "name": "Warmwasser Boost deaktivieren",
+      "description": "Deaktiviert den Warmwasser Boost Modus."
+    },
+    "activate_dhw_boost": {
+      "name": "Warmwasser Boost aktivieren",
+      "description": "Aktiviert den Warmwasser Boost Modus für die angegebene Zeit.",
+      "fields": {
+        "hours": {
+          "name": "Dauer",
+          "description": "Gibt die Dauer in Stunden an, in denen der Warmwasser Boost Modus läuft."
+        }
+      }
+    }
+  },
+  "issues": {
+    "migration_required": {
+      "title": "Die Aira Integration muss neu konfiguriert werden",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Airia entfernen und neu konfigurieren",
+            "description": "Diese Aira-Instanz wurde mit einer **älteren Version** erstellt und ist nicht mehr kompatibel mit der aktuellen Version.\n\nMit einem Klick auf **beheben** wird die alte Integration entfernt und neu angelegt. Die Entitäten werden mit den gleichen IDs neu erstellt, damit die Automationen weiterhin funktionieren und der Verlauf erhalten bleibt.\n\nHome Assistant sollte automatisch das Gerät erkennen und die Konfiguration anzeigen. Falls dies nicht der Fall ist, füge dein Gerät manuell über **Einstellungen → Geräte & Dienste → Integration hinzufügen** hinzu."
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "device_type": {
+      "options": {
+        "unspecified": "Unbekanntes Gerät",
+        "heat_pump": "Wärmepumpe",
+        "battery": "Batterie",
+        "inverter": "Wechselrichter",
+        "photovoltaic": "Photovoltaik"
+      }
+    },
+    "num_phases": {
+      "options": {
+        "1": "Einphasig",
+        "3": "Dreiphasig"
+      }
+    },
+    "num_zones": {
+      "options": {
+        "1": "Eine Zone",
+        "2": "Zwei Zonen"
+      }
+    },
+    "pump_mode_state": {
+      "options": {
+        "unspecified": "Nicht spezifiziert",
+        "idle": "Leerlauf",
+        "heating": "Heizen",
+        "cooling": "Kühlen",
+        "heating_cooling": "Heizen/Kühlen"
+      }
+    }
+  }
+}
