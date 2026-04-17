@@ -365,8 +365,9 @@ class AiraZoneClimate(AiraClimateBase):
             if not zone_state:
                 return HVACMode.OFF
             state = zone_state.lower().replace("pump_mode_state_", "")
-            has_heat = "heating" in state
-            has_cool = "cooling" in state
+            # Apparently aira shows heating/cooling active even if the user can't use cooling for example...
+            has_heat = "heating" in state and self._supports_heating
+            has_cool = "cooling" in state and self._supports_cooling
             if has_heat and has_cool:
                 return HVACMode.HEAT_COOL
             if has_heat:
