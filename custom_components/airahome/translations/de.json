@@ -64,6 +64,12 @@
     },
     "temperature_out_of_range": {
       "message": "Temperatur {temperature}°C ist außerhalb des Bereichs. Muss zwischen {min_temp}°C und {max_temp}°C liegen."
+    },
+    "away_mode_start_in_past": {
+      "message": "Das Startdatum kann nicht in der Vergangenheit liegen. Das Datum muss heute oder in der Zukunft liegen."
+    },
+    "away_mode_dates_too_close": {
+      "message": "Das Enddatum muss mindestens {min_days} Tage hinter dem Startdatum liegen."
     }
   },
   "options": {
@@ -239,6 +245,20 @@
     }
   },
   "services": {
+    "set_away_mode": {
+      "name": "Außer-Haus-Modus",
+      "description": "Aktiviert den Außer-Haus-Modus für die angegeben Zeit. Das Enddatum muss mindestens drei Tage nach dem Startdatum liegen.",
+      "fields": {
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Datum für den Start des Außer-Haus-Modus (ab Mitternacht)."
+        },
+        "end_date": {
+          "name": "Enddatum",
+          "description": "Datum für das Ende des Außer-Haus-Modus (ab Mitternacht)."
+        }
+      }
+    },
     "deactivate_dhw_boost": {
       "name": "Warmwasser Boost deaktivieren",
       "description": "Deaktiviert den Warmwasser Boost Modus."

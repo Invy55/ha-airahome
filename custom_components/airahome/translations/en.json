@@ -64,6 +64,12 @@
     },
     "temperature_out_of_range": {
       "message": "Temperature {temperature}°C is out of range. Must be between {min_temp}°C and {max_temp}°C."
+    },
+    "away_mode_start_in_past": {
+      "message": "Start date cannot be in the past. Today or a future date is required."
+    },
+    "away_mode_dates_too_close": {
+      "message": "End date must be at least {min_days} days after the start date."
     }
   },
   "options": {
@@ -239,6 +245,20 @@
     }
   },
   "services": {
+    "set_away_mode": {
+      "name": "Set Away Mode",
+      "description": "Activates away mode for the specified date range. The end date must be at least 3 days after the start date.",
+      "fields": {
+        "start_date": {
+          "name": "Start Date",
+          "description": "The date away mode begins (at midnight)."
+        },
+        "end_date": {
+          "name": "End Date",
+          "description": "The date away mode ends (at midnight)."
+        }
+      }
+    },
     "deactivate_dhw_boost": {
       "name": "Deactivate DHW Boost",
       "description": "Deactivates DHW boost mode."

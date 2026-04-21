@@ -387,7 +387,7 @@ class AiraZoneClimate(AiraClimateBase):
             active = self.coordinator.data.get("state", {}).get("pump_active_state", "")
             if active == "PUMP_ACTIVE_STATE_HEATING":
                 return HVACAction.HEATING
-            if active == "PUMP_ACTIVE_STATE_COOLING":
+            if active == "PUMP_ACTIVE_STATE_COOLING":  # device should never report this for heating-only units, but if it does the action will be wrong
                 return HVACAction.COOLING
             if active == "PUMP_ACTIVE_STATE_DEFROSTING":
                 return HVACAction.DEFROSTING

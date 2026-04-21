@@ -1,3 +1,18 @@
+set_away_mode:
+  target:
+    entity:
+      - domain: climate
+        integration: airahome
+  fields:
+    start_date:
+      required: true
+      selector:
+        date:
+    end_date:
+      required: true
+      selector:
+        date:
+
 deactivate_dhw_boost:
   target:
     entity:
