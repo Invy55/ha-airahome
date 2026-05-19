@@ -400,8 +400,9 @@ async def async_setup_entry(
         ])
 
         # check configured modes on the heatpump to enable heating/cooling targets accordingly
-        allowed_pump_mode_state = coordinator.data.get("state", {}).get("allowed_pump_mode_state", "PUMP_MODE_STATE_HEATING_COOLING").lower()
-        if "heating" in allowed_pump_mode_state:
+        # nb: we use configured pump modes instead of current pump mode state since the user could have disabled heating/cooling but we want ha to see the heatpump supports it 
+        configured_pump_modes = coordinator.data.get("state", {}).get("configured_pump_modes", "PUMP_MODE_STATE_HEATING_COOLING").lower()
+        if "heating" in configured_pump_modes:
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_heat_target",
@@ -413,7 +414,7 @@ async def async_setup_entry(
                 heating=True        
             )
             ])
-        if "cooling" in allowed_pump_mode_state:
+        if "cooling" in configured_pump_modes:
             sensors.extend([
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_cool_target",
