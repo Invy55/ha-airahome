@@ -59,9 +59,6 @@
     "scheduler_active": {
       "message": "Cannot set temperature while scheduler is active. Please disable the scheduler first."
     },
-    "unsupported_set_temp": {
-      "message": "Can't set temperature for {hvac_mode} setpoint when the heat pump is in {pump_mode_state} mode."
-    },
     "temperature_out_of_range": {
       "message": "Temperature {temperature}°C is out of range. Must be between {min_temp}°C and {max_temp}°C."
     },

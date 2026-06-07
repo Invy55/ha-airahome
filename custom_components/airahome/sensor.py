@@ -416,10 +416,12 @@ async def async_setup_entry(
             ])
         if "cooling" in configured_pump_modes:
             sensors.extend([
+            # NB: Aira uses the heating setpoint for both cooling and heating -> sensor disabled by default cause it is technically useless
             AiraTemperatureSensor(coordinator, entry,
                 unique_id_suffix=f"zone_{i}_cool_target",
                 data_path=("state", "zone_setpoints_cooling", f"zone_{i}"),
                 icon="mdi:snowflake-thermometer",
+                enabled_by_default=False
             ),
             AiraCurveSensor(coordinator, entry,
                 zone=i,

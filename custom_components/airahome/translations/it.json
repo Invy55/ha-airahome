@@ -59,9 +59,6 @@
     "scheduler_active": {
       "message": "Impossibile impostare la temperatura con la programmazione attiva. Disattiva la programmazione prima."
     },
-    "unsupported_set_temp": {
-      "message": "Impossibile impostare la temperatura di riferimento del {hvac_mode} quanto la pompa di calore è in modalità {pump_mode_state}."
-    },
     "temperature_out_of_range": {
       "message": "La temperatura {temperature}°C è fuori dall'intervallo consentito. Deve essere compresa tra {min_temp}°C e {max_temp}°C."
     },

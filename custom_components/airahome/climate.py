@@ -6,8 +6,6 @@ from typing import Any
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    ATTR_TARGET_TEMP_HIGH,
-    ATTR_TARGET_TEMP_LOW,
     ClimateEntityFeature,
     HVACAction,
     HVACMode,
@@ -29,7 +27,6 @@ from pyairahome.commands import (
 )
 from pyairahome.device.heat_pump.command.v1.set_zone_setpoints_pb2 import SetZoneSetpoints as _SetZoneSetpointsPb2, ZoneTemperatures  # type: ignore
 
-from . import async_get_translation
 from .const import (
     CONF_DEVICE_NAME,
     CONF_DEVICE_UUID,
@@ -68,7 +65,7 @@ async def async_setup_entry(
             AiraZoneClimate(
                 coordinator, entry, aira,
                 zone=i,
-                allowed_pump_mode_state=configured_pump_modes
+                configured_pump_modes=configured_pump_modes
             )
         )
 
@@ -137,7 +134,7 @@ class AiraZoneClimate(AiraClimateBase):
         entry: ConfigEntry,
         aira: AiraHome,
         zone: int,
-        allowed_pump_mode_state: str,
+        configured_pump_modes: str,
     ) -> None:
         """Initialise the zone climate entity."""
         unique_id_suffix = f"zone_{zone}_climate"
@@ -146,8 +143,8 @@ class AiraZoneClimate(AiraClimateBase):
         self._zone = zone
 
         # Determine which HVAC modes the device configuration supports
-        self._supports_heating = "heating" in allowed_pump_mode_state
-        self._supports_cooling = "cooling" in allowed_pump_mode_state
+        self._supports_heating = "heating" in configured_pump_modes
+        self._supports_cooling = "cooling" in configured_pump_modes
 
         hvac_modes: list[HVACMode] = [HVACMode.OFF]
         if self._supports_heating:
@@ -156,20 +153,17 @@ class AiraZoneClimate(AiraClimateBase):
             hvac_modes.append(HVACMode.COOL)
         if self._supports_heating and self._supports_cooling:
             hvac_modes.append(HVACMode.HEAT_COOL)
-        _LOGGER.debug("Zone %d allowed pump mode state: %s, supports heating: %s, supports cooling: %s, resulting HVAC modes: %s",
-            zone, allowed_pump_mode_state, self._supports_heating, self._supports_cooling, hvac_modes
+        _LOGGER.debug("Zone %d configured pump modes: %s, supports heating: %s, supports cooling: %s, resulting HVAC modes: %s",
+            zone, configured_pump_modes, self._supports_heating, self._supports_cooling, hvac_modes
         )
         self._attr_hvac_modes = hvac_modes
 
-        features = (
+        self._attr_supported_features = (
             ClimateEntityFeature.TURN_ON
             | ClimateEntityFeature.TURN_OFF
             | ClimateEntityFeature.TARGET_TEMPERATURE
         )
-        if self._supports_heating and self._supports_cooling:
-            features |= ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
-        self._attr_supported_features = features
-        _LOGGER.debug("Zone %d supported features: %d", zone, features)
+        _LOGGER.debug("Zone %d supported features: %d", zone, self._attr_supported_features)
 
 
     # Internal helpers
@@ -199,7 +193,9 @@ class AiraZoneClimate(AiraClimateBase):
             zone_setpoints=ZoneTemperatures(
                 **{zone: heating if heating is not None else cooling}
             ),
-            kind=Kind.KIND_HEATING if heating is not None else Kind.KIND_COOLING
+            # NB: Aira uses the heating setpoint for both cooling and heating
+            # Kind.KIND_HEATING if heating is not None else Kind.KIND_COOLING
+            kind=Kind.KIND_HEATING
         )
             
         try:
@@ -223,7 +219,7 @@ class AiraZoneClimate(AiraClimateBase):
             if heating is not None:
                 state["zone_setpoints_heating"][zone_key] = heating
             if cooling is not None:
-                state["zone_setpoints_cooling"][zone_key] = cooling
+                state["zone_setpoints_heating"][zone_key] = cooling
             
             self.coordinator.async_update_listeners() # force every entity subscribed to the coordinator to update
         except (KeyError, TypeError):
@@ -311,46 +307,11 @@ class AiraZoneClimate(AiraClimateBase):
     
     @property
     def target_temperature(self) -> float | None:  # type: ignore
-        """Return the target temperature for the current HVAC mode"""
+        """Return the target temperature (always the heating setpoint)."""
         if not self.coordinator.data:
             return None
         try:
-            state = self.coordinator.data.get("state", {})
-            mode = self.hvac_mode
-            if mode == HVACMode.HEAT_COOL:
-                return None
-            if mode == HVACMode.HEAT:
-                value = state.get("zone_setpoints_heating", {}).get(f"zone_{self._zone}")
-            elif mode == HVACMode.COOL:
-                value = state.get("zone_setpoints_cooling", {}).get(f"zone_{self._zone}")
-            else:
-                return None
-            return round(float(value), 2) if value is not None else None
-        except (KeyError, ValueError, TypeError):
-            return None
-        
-    @property
-    def target_temperature_high(self) -> float | None:  # type: ignore
-        """Return the cooling setpoint (upper bound in HEAT_COOL range mode)."""
-        if not self._supports_cooling or not self.coordinator.data:
-            return None
-        try:
-            value = self.coordinator.data.get("state", {}).get(
-                "zone_setpoints_cooling", {}
-            ).get(f"zone_{self._zone}")
-            return round(float(value), 2) if value is not None else None
-        except (KeyError, ValueError, TypeError):
-            return None
-
-    @property
-    def target_temperature_low(self) -> float | None:  # type: ignore
-        """Return the heating setpoint (lower bound in HEAT_COOL range mode)."""
-        if not self._supports_heating or not self.coordinator.data:
-            return None
-        try:
-            value = self.coordinator.data.get("state", {}).get(
-                "zone_setpoints_heating", {}
-            ).get(f"zone_{self._zone}")
+            value = self.coordinator.data.get("state", {}).get("zone_setpoints_heating", {}).get(f"zone_{self._zone}")
             return round(float(value), 2) if value is not None else None
         except (KeyError, ValueError, TypeError):
             return None
@@ -361,10 +322,10 @@ class AiraZoneClimate(AiraClimateBase):
         if not self.coordinator.data:
             return HVACMode.OFF
         try:
-            zone_state = self.coordinator.data.get("state", {}).get("allowed_pump_mode_state", "").lower()
+            zone_state = self.coordinator.data.get("state", {}).get("allowed_pump_mode_state", "").lower().replace("pump_mode_state_", "")
             if not zone_state:
                 return HVACMode.OFF
-            state = zone_state.lower().replace("pump_mode_state_", "")
+            state = zone_state
             # Apparently aira shows heating/cooling active even if the user can't use cooling for example...
             has_heat = "heating" in state and self._supports_heating
             has_cool = "cooling" in state and self._supports_cooling
@@ -399,84 +360,29 @@ class AiraZoneClimate(AiraClimateBase):
     
     # Service calls
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Set the zone target temperature (heating, cooling, or both in range mode)."""
+        """Set the zone target temperature (always the heating setpoint)."""
         if not self.coordinator.data:
             return
 
-        temp_single = kwargs.get(ATTR_TEMPERATURE)
-        temp_high = kwargs.get(ATTR_TARGET_TEMP_HIGH)
-        temp_low = kwargs.get(ATTR_TARGET_TEMP_LOW)
+        setpoint = kwargs.get(ATTR_TEMPERATURE)
+        if setpoint is None:
+            return
 
-        current_pump_mode_state = self.coordinator.data.get("state", {}).get("current_pump_mode_state", {}).get(f"zone_{self._zone}", "").lower().replace("pump_mode_state_", "")
-
-        setpoint_heating = None
-        setpoint_cooling = None
-
-        # if the user is in a single mode and it corresponds to the allowed mode we allow the setpoint update
-        if self.hvac_mode == HVACMode.HEAT and current_pump_mode_state == "heating":
-            setpoint_heating = temp_single
-        elif self.hvac_mode == HVACMode.COOL and current_pump_mode_state == "cooling":
-            setpoint_cooling = temp_single
-        # if the user is in heat_cool mode we allow updating only the setpoint corresponding to the current active mode, since aira doesn't allow setting both at the same time
-        # ha always sends both temp_low and temp_high, so we infer which one the user actually changed by comparing with current stored values
-        elif self.hvac_mode == HVACMode.HEAT_COOL:
-            heating_changed = temp_low is not None and temp_low != self.target_temperature_low
-            cooling_changed = temp_high is not None and temp_high != self.target_temperature_high
-            if current_pump_mode_state == "heating":
-                if cooling_changed and not heating_changed:
-                    _LOGGER.warning("Can't set temperature for cooling when pump is in heating mode")
-                    raise ServiceValidationError(
-                        translation_domain=DOMAIN,
-                        translation_key="unsupported_set_temp",
-                        translation_placeholders={
-                            "hvac_mode": await async_get_translation(self.hass, "pump_mode_state", "cooling"),
-                            "pump_mode_state": await async_get_translation(self.hass, "pump_mode_state", current_pump_mode_state),
-                        }
-                    )
-                setpoint_heating = temp_low
-            elif current_pump_mode_state == "cooling":
-                if heating_changed and not cooling_changed:
-                    _LOGGER.warning("Can't set temperature for heating when pump is in cooling mode")
-                    raise ServiceValidationError(
-                        translation_domain=DOMAIN,
-                        translation_key="unsupported_set_temp",
-                        translation_placeholders={
-                            "hvac_mode": await async_get_translation(self.hass, "pump_mode_state", "heating"),
-                            "pump_mode_state": await async_get_translation(self.hass, "pump_mode_state", current_pump_mode_state),
-                        }
-                    )
-                setpoint_cooling = temp_high
-        else:
-            _LOGGER.warning("Can't set temperature with unsupported HVAC mode %s and pump mode state %s", self.hvac_mode, current_pump_mode_state)
-            disallowed_mode = "heating" if self.hvac_mode == HVACMode.COOL else "cooling"
-
+        if not (self._attr_min_temp <= setpoint <= self._attr_max_temp):
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
-                translation_key="unsupported_set_temp",
+                translation_key="temperature_out_of_range",
                 translation_placeholders={
-                    "hvac_mode": await async_get_translation(self.hass, "pump_mode_state", disallowed_mode),
-                    "pump_mode_state": await async_get_translation(self.hass, "pump_mode_state", current_pump_mode_state),
+                    "temperature": str(setpoint),
+                    "min_temp": str(self._attr_min_temp),
+                    "max_temp": str(self._attr_max_temp),
                 }
             )
 
-        _LOGGER.debug("Received set_temperature call with kwargs: %s. Current pump mode state: %s", kwargs, current_pump_mode_state)
+        _LOGGER.debug("Received set_temperature call with kwargs: %s", kwargs)
 
-        for setpoint in [setpoint_heating, setpoint_cooling]:
-            if setpoint is None:
-                continue
-            if not (self._attr_min_temp <= setpoint <= self._attr_max_temp):
-                raise ServiceValidationError(
-                    translation_domain=DOMAIN,
-                    translation_key="temperature_out_of_range",
-                    translation_placeholders={
-                        "temperature": str(setpoint),
-                        "min_temp": str(self._attr_min_temp),
-                        "max_temp": str(self._attr_max_temp),
-                    }
-                )
-
-        if await self._set_setpoints(setpoint_heating, setpoint_cooling):
-            await self._fake_setpoint_set(setpoint_heating, setpoint_cooling)
+        if await self._set_setpoints(setpoint, None):
+            await self._fake_setpoint_set(setpoint, None)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set the HVAC mode by toggling the global heating / cooling functions."""
