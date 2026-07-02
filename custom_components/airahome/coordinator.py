@@ -126,13 +126,14 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
             # Handle empty result or aira errors
             if (not state_dict and self._last_successful_data.get("state")) or \
                (state_data and state_data.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
-                state_dict = self._last_successful_data["state"]
+                # Copy so the derived key set below doesn't mutate the cached copy.
+                state_dict = deepcopy(self._last_successful_data["state"])
                 successful -= 1
                 _LOGGER.debug("Using stale state data due to empty fetch or error")
 
             if (not system_dict and self._last_successful_data.get("system_check_state")) or \
                (system_check_state and system_check_state.get("error") != "DATA_RESPONSE_ERROR_UNSPECIFIED"):
-                system_dict = self._last_successful_data["system_check_state"]
+                system_dict = deepcopy(self._last_successful_data["system_check_state"])
                 successful -= 1
                 _LOGGER.debug("Using stale system_check data due to empty fetch or error")
 
@@ -240,13 +241,20 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 if service_info and service_info.rssi is not None:
                     rssi = service_info.rssi
-            except Exception:
-                # Fallback: try getting from device
+            except Exception as rssi_err:
+                _LOGGER.debug("Getting RSSI from service info failed: %s", rssi_err)
+
+            # Fall back to querying the device directly whenever service info
+            # didn't yield an RSSI (no recent advertisement is the common,
+            # non-exceptional case). Only worthwhile while connected.
+            if rssi is None and is_connected:
                 try:
                     async with asyncio.timeout(5):
                         rssi = await self.aira.ble._get_rssi()
                 except TimeoutError:
                     _LOGGER.debug("Fallback RSSI fetch timed out")
+                except Exception as rssi_err:
+                    _LOGGER.debug("Fallback RSSI fetch failed: %s", rssi_err)
                 else:
                     _LOGGER.debug("Fallback RSSI fetch used")
 
