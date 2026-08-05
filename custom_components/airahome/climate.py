@@ -317,7 +317,7 @@ class AiraZoneClimate(AiraClimateBase):
             raw = self._get_thermostat_field("last_update").get("actual_temperature")
             if raw is not None:
                 return round(float(raw) / 10, 2)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
             pass
         return None
 
@@ -330,7 +330,7 @@ class AiraZoneClimate(AiraClimateBase):
             raw = self._get_thermostat_field("last_update").get("humidity")
             if raw is not None:
                 return round(float(raw) / 10, 1)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
             pass
         return None
     
