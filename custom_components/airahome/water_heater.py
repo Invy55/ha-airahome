@@ -9,13 +9,14 @@ from homeassistant.components.water_heater.const import STATE_ELECTRIC, STATE_HE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, STATE_OFF, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from pyairahome import AiraHome
 from pyairahome.commands import SetTargetHotWaterTemperature
+from pyairahome.utils.exceptions import BLEConnectionError
 
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_INSTALLATION, CONF_MAC_ADDRESS, DEFAULT_SHORT_NAME, DOMAIN
 from .coordinator import AiraDataUpdateCoordinator
@@ -109,22 +110,30 @@ class AiraWaterHeater(CoordinatorEntity, WaterHeaterEntity): # type: ignore
         except (KeyError, ValueError, TypeError):
             return None
     
-    async def _set_temperature(self, temperature: float) -> bool | list[dict]:
+    async def _set_temperature(self, temperature: float) -> None:
         """Set the water heater temperature to the specified value."""
         _LOGGER.debug("Setting water heater temperature to %s°C", temperature)
         command_in = SetTargetHotWaterTemperature(temperature=temperature)
-            
+
         try:
             updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
             if "succeeded" in updates[-1]:
-                return True
-            elif "error" in updates[-1]:
-                _LOGGER.error("Failed to set water heater temperature: %s", updates[-1]["error"])
-                return False
-        except RuntimeError as e:
+                return
+            error = updates[-1].get("error", "no confirmation received from device")
+        except (BLEConnectionError, TimeoutError) as e:
             _LOGGER.error("Error setting water heater temperature: %s", str(e))
-        
-        return False
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="water_heater_temp_failed",
+                translation_placeholders={"temperature": str(temperature), "error": str(e)},
+            ) from e
+
+        _LOGGER.error("Failed to set water heater temperature: %s", error)
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="water_heater_temp_failed",
+            translation_placeholders={"temperature": str(temperature), "error": str(error)},
+        )
 
     async def _fake_temperature_set(self, temperature: float) -> None:
         """Fake setting the water heater temperature (for propagating change to the entire integration asap)."""
@@ -186,10 +195,10 @@ class AiraWaterHeater(CoordinatorEntity, WaterHeaterEntity): # type: ignore
                     closest_temp = min(higher_temps) if higher_temps else previous_temp
 
             if closest_temp and closest_temp != previous_temp:
-                _LOGGER.debug("Closest temperature found. Setting water heater temperature to %s°C", closest_temp)   
-                if await self._set_temperature(closest_temp):
-                    await self._fake_temperature_set(closest_temp)
-                    return
+                _LOGGER.debug("Closest temperature found. Setting water heater temperature to %s°C", closest_temp)
+                await self._set_temperature(closest_temp)
+                await self._fake_temperature_set(closest_temp)
+                return
         else:
             # Check if the temperature is in the allowed list
             if temp not in self._allowed_temperatures:
@@ -202,10 +211,10 @@ class AiraWaterHeater(CoordinatorEntity, WaterHeaterEntity): # type: ignore
                         "temperature": temperature
                     },
                 )
-            if await self._set_temperature(temp):
-                _LOGGER.debug("Selected temperature allowed. Setting water heater temperature to %s°C", temp)
-                await self._fake_temperature_set(temp)
-                return
+            await self._set_temperature(temp)
+            _LOGGER.debug("Selected temperature allowed. Setting water heater temperature to %s°C", temp)
+            await self._fake_temperature_set(temp)
+            return
 
         if previous_temp:
             await self._fake_temperature_set(previous_temp)  # Ensure state is consistent

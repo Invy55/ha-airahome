@@ -12,7 +12,8 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant, ServiceValidationError
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -26,6 +27,7 @@ from pyairahome.commands import (
     SetZoneSetpoints,
 )
 from pyairahome.device.heat_pump.command.v1.set_zone_setpoints_pb2 import SetZoneSetpoints as _SetZoneSetpointsPb2, ZoneTemperatures  # type: ignore
+from pyairahome.utils.exceptions import BLEConnectionError
 
 from .const import (
     CONF_DEVICE_NAME,
@@ -179,36 +181,51 @@ class AiraZoneClimate(AiraClimateBase):
             pass
         return None
     
-    async def _set_setpoints(self, heating: float | None, cooling: float | None) -> bool:
+    async def _set_setpoints(self, heating: float | None, cooling: float | None) -> None:
         """Send a command to set the heating/cooling setpoints for this zone."""
+        # Plain ValueError, not HomeAssistantError: this is a bug in our own calling code, not a device/BLE failure. Should never happen.
         if heating is not None and cooling is not None:
-            _LOGGER.warning("Can't set both heating and cooling setpoints at the same time due to device limitations. Received heating: %s, cooling: %s", heating, cooling)
-            return False
+            raise ValueError(f"Can't set both heating and cooling setpoints at the same time due to device limitations. Received heating: {heating}, cooling: {cooling}")
         if heating is None and cooling is None:
-            _LOGGER.warning("No setpoint provided to set_setpoints. Received heating: %s, cooling: %s", heating, cooling)
-            return False
-        
+            raise ValueError(f"No setpoint provided to set_setpoints. Received heating: {heating}, cooling: {cooling}")
+
+        mode = "heating" if heating is not None else "cooling"
+        temperature = heating if heating is not None else cooling
+
         zone = f"zone_{self._zone}"
         command_in = SetZoneSetpoints(
             zone_setpoints=ZoneTemperatures(
-                **{zone: heating if heating is not None else cooling}
+                **{zone: temperature}
             ),
             # NB: Aira uses the heating setpoint for both cooling and heating
             # Kind.KIND_HEATING if heating is not None else Kind.KIND_COOLING
             kind=Kind.KIND_HEATING
         )
-            
+
+        placeholders = {
+            "zone": str(self._zone),
+            "mode": mode,
+            "temperature": str(temperature),
+        }
         try:
             updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
             if "succeeded" in updates[-1]:
-                return True
-            elif "error" in updates[-1]:
-                _LOGGER.error("Failed to set zone %d %s setpoint to %s temperature: %s", self._zone, "heating" if heating is not None else "cooling", str(heating) if heating is not None else str(cooling), updates[-1]["error"])
-                return False
-        except RuntimeError as e:
-            _LOGGER.error("Error setting %s setpoint to %s temperature: %s", "heating" if heating is not None else "cooling", str(heating) if heating is not None else str(cooling), str(e))
-        
-        return False
+                return
+            error = updates[-1].get("error", "no confirmation received from device")
+        except (BLEConnectionError, TimeoutError) as e:
+            _LOGGER.error("Error setting %s setpoint to %s temperature: %s", mode, temperature, str(e))
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="set_setpoint_failed",
+                translation_placeholders={**placeholders, "error": str(e)},
+            ) from e
+
+        _LOGGER.error("Failed to set zone %d %s setpoint to %s temperature: %s", self._zone, mode, temperature, error)
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="set_setpoint_failed",
+            translation_placeholders={**placeholders, "error": str(error)},
+        )
 
     async def _fake_setpoint_set(self, heating: float | None, cooling: float | None) -> None:
         """Fake setting the zone heating/cooling setpoints (for propagating change to the entire integration asap)."""
@@ -225,7 +242,7 @@ class AiraZoneClimate(AiraClimateBase):
         except (KeyError, TypeError):
             pass
 
-    async def _set_mode_on_off(self, heating: bool | None, cooling: bool | None) -> bool:
+    async def _set_mode_on_off(self, heating: bool | None, cooling: bool | None) -> None:
         """Helper for setting HVAC mode by toggling heating/cooling functions."""
         commands = []
         if heating is not None:
@@ -238,22 +255,34 @@ class AiraZoneClimate(AiraClimateBase):
                 commands.append((EnableCoolingFunction(), "cooling", "enabled"))
             else:
                 commands.append((DisableCoolingFunction(), "cooling", "disabled"))
-        
-        results = []
-        for command in commands:
-            command_in, mode, action = command
+
+        for command_in, mode, action in commands:
+            placeholders = {"zone": str(self._zone), "mode": mode, "action": action}
             try:
                 updates = [x async for x in await self.aira.ble._run_command(command_in=command_in)] # type: ignore
                 if "succeeded" in updates[-1]:
-                    results.append(True)
-                elif "error" in updates[-1]:
-                    _LOGGER.error("Failed to set %s mode to %s: %s", mode, action, updates[-1]["error"])
-                    results.append(False) # TODO: test this append
-            except RuntimeError as e:
+                    # Fake-write this command's effect immediately, so a later command in this same
+                    # batch failing doesn't leave an already-applied change unreflected until the next coordinator update.
+                    self._fake_mode_set(
+                        heating if mode == "heating" else None,
+                        cooling if mode == "cooling" else None,
+                    )
+                    continue
+                error = updates[-1].get("error", "no confirmation received from device")
+            except (BLEConnectionError, TimeoutError) as e:
                 _LOGGER.error("Error setting %s mode to %s: %s", mode, action, str(e))
-                results.append(False)
-        
-        return all(results)
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="hvac_mode_failed",
+                    translation_placeholders={**placeholders, "error": str(e)},
+                ) from e
+
+            _LOGGER.error("Failed to set %s mode to %s: %s", mode, action, error)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="hvac_mode_failed",
+                translation_placeholders={**placeholders, "error": str(error)},
+            )
 
     def _fake_mode_set(self, heating: bool | None, cooling: bool | None) -> None:
         """Fake setting the allowed pump mode state (for propagating change to the entire integration asap)."""
@@ -381,8 +410,8 @@ class AiraZoneClimate(AiraClimateBase):
 
         _LOGGER.debug("Received set_temperature call with kwargs: %s", kwargs)
 
-        if await self._set_setpoints(setpoint, None):
-            await self._fake_setpoint_set(setpoint, None)
+        await self._set_setpoints(setpoint, None)
+        await self._fake_setpoint_set(setpoint, None)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set the HVAC mode by toggling the global heating / cooling functions."""
@@ -404,8 +433,8 @@ class AiraZoneClimate(AiraClimateBase):
             heating = False if self._supports_heating else None
             cooling = False if self._supports_cooling else None
 
-        if await self._set_mode_on_off(heating, cooling):
-            self._fake_mode_set(heating, cooling)
+        # Fake-write moved into _set_mode_on_off, so state updates for each command instead of only on full success.
+        await self._set_mode_on_off(heating, cooling)
 
     async def async_turn_on(self) -> None:
         """Turn the zone on (restores the most capable supported mode)."""

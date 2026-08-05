@@ -67,6 +67,24 @@
     },
     "away_mode_dates_too_close": {
       "message": "La data di fine deve essere almeno {min_days} giorni dopo la data di inizio."
+    },
+    "set_setpoint_failed": {
+      "message": "Impossibile impostare il setpoint di {mode} per la zona {zone} a {temperature}°C: {error}"
+    },
+    "hvac_mode_failed": {
+      "message": "Impossibile impostare la modalità {mode} su {action} per la zona {zone}: {error}"
+    },
+    "water_heater_temp_failed": {
+      "message": "Impossibile impostare la temperatura dell'acqua calda a {temperature}°C: {error}"
+    },
+    "dhw_boost_activate_failed": {
+      "message": "Impossibile attivare il boost ACS per {hours} ora/e: {error}"
+    },
+    "dhw_boost_deactivate_failed": {
+      "message": "Impossibile disattivare il boost ACS: {error}"
+    },
+    "away_mode_set_failed": {
+      "message": "Impossibile impostare la modalità assenza dal {start_date} al {end_date}: {error}"
     }
   },
   "options": {

@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, device_registry as dr, entity_registry as er
 from pyairahome.commands import ActivateHotWaterBoosting, DeactivateHotWaterBoosting, SetAwayMode
+from pyairahome.utils.exceptions import BLEConnectionError
 import voluptuous as vol
 
 from .const import DOMAIN
@@ -102,10 +103,20 @@ async def _handle_activate_dhw_boost(hass: HomeAssistant, call: ServiceCall) -> 
             updates = [x async for x in await aira.ble._run_command(command_in=command_in)]  # type: ignore
             if "succeeded" in updates[-1]:
                 _LOGGER.debug("DHW boost activated for %d hour(s)", hours)
-            elif "error" in updates[-1]:
-                raise HomeAssistantError(f"Failed to activate DHW boost: {updates[-1]['error']}")
-        except RuntimeError as e:
-            raise HomeAssistantError(f"Error activating DHW boost: {e}") from e
+                continue
+            error = updates[-1].get("error", "no confirmation received from device")
+        except (BLEConnectionError, TimeoutError) as e:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="dhw_boost_activate_failed",
+                translation_placeholders={"hours": str(hours), "error": str(e)},
+            ) from e
+
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="dhw_boost_activate_failed",
+            translation_placeholders={"hours": str(hours), "error": str(error)},
+        )
 
 
 def _date_to_timestamp(d: datetime.date) -> Timestamp:
@@ -141,14 +152,25 @@ async def _handle_set_away_mode(hass: HomeAssistant, call: ServiceCall) -> None:
             end_time=_date_to_timestamp(end_date),
             target_room_temperature=0.0, # apparently normal app behavior is to set target temp to 0 when activating away mode, the user can't do anything about it officially
         )
+        placeholders = {"start_date": start_date.isoformat(), "end_date": end_date.isoformat()}
         try:
             updates = [x async for x in await aira.ble._run_command(command_in=command_in)]  # type: ignore
             if "succeeded" in updates[-1]:
                 _LOGGER.debug("Away mode set from %s to %s", start_date, end_date)
-            elif "error" in updates[-1]:
-                raise HomeAssistantError(f"Failed to set away mode: {updates[-1]['error']}")
-        except RuntimeError as e:
-            raise HomeAssistantError(f"Error setting away mode: {e}") from e
+                continue
+            error = updates[-1].get("error", "no confirmation received from device")
+        except (BLEConnectionError, TimeoutError) as e:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="away_mode_set_failed",
+                translation_placeholders={**placeholders, "error": str(e)},
+            ) from e
+
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="away_mode_set_failed",
+            translation_placeholders={**placeholders, "error": str(error)},
+        )
 
 
 async def _handle_deactivate_dhw_boost(hass: HomeAssistant, call: ServiceCall) -> None:
@@ -160,10 +182,20 @@ async def _handle_deactivate_dhw_boost(hass: HomeAssistant, call: ServiceCall) -
             updates = [x async for x in await aira.ble._run_command(command_in=command_in)]  # type: ignore
             if "succeeded" in updates[-1]:
                 _LOGGER.debug("DHW boost deactivated")
-            elif "error" in updates[-1]:
-                raise HomeAssistantError(f"Failed to deactivate DHW boost: {updates[-1]['error']}")
-        except RuntimeError as e:
-            raise HomeAssistantError(f"Error deactivating DHW boost: {e}") from e
+                continue
+            error = updates[-1].get("error", "no confirmation received from device")
+        except (BLEConnectionError, TimeoutError) as e:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="dhw_boost_deactivate_failed",
+                translation_placeholders={"error": str(e)},
+            ) from e
+
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="dhw_boost_deactivate_failed",
+            translation_placeholders={"error": str(error)},
+        )
 
 
 async def async_setup_services(hass: HomeAssistant) -> None:

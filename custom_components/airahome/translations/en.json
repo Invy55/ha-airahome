@@ -67,6 +67,24 @@
     },
     "away_mode_dates_too_close": {
       "message": "End date must be at least {min_days} days after the start date."
+    },
+    "set_setpoint_failed": {
+      "message": "Failed to set the {mode} setpoint for zone {zone} to {temperature}°C: {error}"
+    },
+    "hvac_mode_failed": {
+      "message": "Failed to set {mode} mode to {action} for zone {zone}: {error}"
+    },
+    "water_heater_temp_failed": {
+      "message": "Failed to set the water heater temperature to {temperature}°C: {error}"
+    },
+    "dhw_boost_activate_failed": {
+      "message": "Failed to activate DHW boost for {hours} hour(s): {error}"
+    },
+    "dhw_boost_deactivate_failed": {
+      "message": "Failed to deactivate DHW boost: {error}"
+    },
+    "away_mode_set_failed": {
+      "message": "Failed to set away mode from {start_date} to {end_date}: {error}"
     }
   },
   "options": {

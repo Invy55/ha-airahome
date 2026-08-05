@@ -67,6 +67,24 @@
     },
     "away_mode_dates_too_close": {
       "message": "Das Enddatum muss mindestens {min_days} Tage hinter dem Startdatum liegen."
+    },
+    "set_setpoint_failed": {
+      "message": "Der {mode}-Sollwert für Zone {zone} konnte nicht auf {temperature}°C gesetzt werden: {error}"
+    },
+    "hvac_mode_failed": {
+      "message": "Der {mode}-Modus für Zone {zone} konnte nicht auf {action} gesetzt werden: {error}"
+    },
+    "water_heater_temp_failed": {
+      "message": "Die Warmwassertemperatur konnte nicht auf {temperature}°C gesetzt werden: {error}"
+    },
+    "dhw_boost_activate_failed": {
+      "message": "DHW-Boost konnte nicht für {hours} Stunde(n) aktiviert werden: {error}"
+    },
+    "dhw_boost_deactivate_failed": {
+      "message": "DHW-Boost konnte nicht deaktiviert werden: {error}"
+    },
+    "away_mode_set_failed": {
+      "message": "Abwesenheitsmodus konnte nicht von {start_date} bis {end_date} gesetzt werden: {error}"
     }
   },
   "options": {
