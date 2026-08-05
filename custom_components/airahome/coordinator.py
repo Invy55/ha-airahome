@@ -271,8 +271,8 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                 self._is_connected = False
                 is_connected = False
 
-            # Device is not connected, return stale data if available
-            stale_result = deepcopy(DEFAULT_DATA)
+            # Device is not connected, return stale data if available and recent enough
+            stale_result = None
             if self._last_successful_data and self._last_successful_timestamp:
                 age = start_time - self._last_successful_timestamp
                 if age < STALE_DATA_THRESHOLD:
@@ -280,10 +280,9 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                         "Not connected, returning stale data (age: %.0f seconds)",
                         age
                     )
-                    # Return last good data but mark as disconnected
                     stale_result = deepcopy(self._last_successful_data)
                     stale_result["connected"] = False
-                    stale_result["rssi"] = rssi  # Update RSSI even if using stale data
+                    stale_result["rssi"] = rssi
 
             # Device is not connected, attempt reconnection with exponential backoff
             if self._reconnect_attempts < self._max_reconnect_attempts:
@@ -317,4 +316,6 @@ class AiraDataUpdateCoordinator(DataUpdateCoordinator):
                     self.hass.config_entries.async_reload(self.config_entry.entry_id)
                 )
             
-            return stale_result
+            if stale_result is not None:
+                return stale_result
+            raise UpdateFailed("Device not connected and no usable stale data") from err

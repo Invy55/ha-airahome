@@ -19,7 +19,7 @@ DEFAULT_NAME = "Aira Heat Pump"
 DEFAULT_SCAN_INTERVAL = 30  # seconds - coordinator waits for completion before next cycle
 DEFAULT_NUM_ZONES = 1
 DEFAULT_NUM_PHASES = 3
-STALE_DATA_THRESHOLD = 600  # seconds (10 minutes) - keep old data if fresher than this
+STALE_DATA_THRESHOLD = 600  # seconds (10 minutes) - keep old data if fresher than this to outlast the full reconnect backoff cycle
 
 # BLE connection timeouts (increased for poor connectivity scenarios)
 BLE_CONNECT_TIMEOUT = 30  # seconds - timeout for establishing BLE connection
