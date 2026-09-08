@@ -85,6 +85,9 @@
     },
     "away_mode_set_failed": {
       "message": "Impossibile impostare la modalità assenza dal {start_date} al {end_date}: {error}"
+    },
+    "initial_ble_connection_failed": {
+      "message": "Connessione BLE iniziale non riuscita. Assicurati che il dispositivo sia acceso e nel raggio d'azione."
     }
   },
   "options": {
@@ -246,6 +249,7 @@
       "defrosting": { "name": "Sbrinamento" },
       "ou_pump": { "name": "Circolatore Primario UE" },
       "alarms": { "name": "Allarmi" },
+      "warnings": { "name": "Avvisi" },
       "zone_1_circulator": { "name": "Zona 1 Circolatore" },
       "zone_2_circulator": { "name": "Zona 2 Circolatore" },
       "thermostat_1_low_battery": { "name": "Termostato 1 Batteria Scarica" },

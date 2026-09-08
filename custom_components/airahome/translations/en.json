@@ -85,6 +85,9 @@
     },
     "away_mode_set_failed": {
       "message": "Failed to set away mode from {start_date} to {end_date}: {error}"
+    },
+    "initial_ble_connection_failed": {
+      "message": "Initial BLE connection failed. Please ensure the device is powered on and within range."
     }
   },
   "options": {
@@ -246,6 +249,7 @@
       "defrosting": { "name": "Defrosting" },
       "ou_pump": { "name": "OU Primary Circulator" },
       "alarms": { "name": "Alarms" },
+      "warnings": { "name": "Warnings" },
       "zone_1_circulator": { "name": "Zone 1 Circulator" },
       "zone_2_circulator": { "name": "Zone 2 Circulator" },
       "thermostat_1_low_battery": { "name": "Thermostat 1 Low Battery" },

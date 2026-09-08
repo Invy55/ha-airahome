@@ -218,9 +218,3 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         partial(_handle_set_away_mode, hass),
         schema=SET_AWAY_MODE_SCHEMA,
     )
-
-
-def async_unload_services(hass: HomeAssistant) -> None:
-    """Remove airahome services."""
-    for service in SERVICES:
-        hass.services.async_remove(DOMAIN, service)

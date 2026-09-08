@@ -7,7 +7,7 @@
       "manufacturer_id": 65535
     }
   ],
-  "codeowners": ["@invy55", "@pavlick"],
+  "codeowners": ["@invy55"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/invy55/ha-airahome",
@@ -16,7 +16,7 @@
   "issue_tracker": "https://github.com/invy55/ha-airahome/issues",
   "loggers": ["pyairahome"],
   "requirements": [
-    "pyairahome==2.2.5"
+    "pyairahome==2.3.0"
   ],
   "version": "1.0.0"
 }

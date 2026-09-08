@@ -85,6 +85,9 @@
     },
     "away_mode_set_failed": {
       "message": "Abwesenheitsmodus konnte nicht von {start_date} bis {end_date} gesetzt werden: {error}"
+    },
+    "initial_ble_connection_failed": {
+      "message": "Initiale BLE-Verbindung fehlgeschlagen. Bitte stelle sicher, dass das Gerät eingeschaltet und in Reichweite ist."
     }
   },
   "options": {
@@ -246,6 +249,7 @@
       "defrosting": { "name": "Abtauen" },
       "ou_pump": { "name": "Außeneinheit-Primärumwälzpumpe" },
       "alarms": { "name": "Alarme" },
+      "warnings": { "name": "Warnungen" },
       "zone_1_circulator": { "name": "Zone 1 Umwälzpumpe" },
       "zone_2_circulator": { "name": "Zone 2 Umwälzpumpe" },
       "thermostat_1_low_battery": { "name": "Thermostat 1 Niedriger Batteriestand" },

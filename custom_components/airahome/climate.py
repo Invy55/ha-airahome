@@ -176,6 +176,8 @@ class AiraZoneClimate(AiraClimateBase):
             if isinstance(updates, list):
                 for element in updates:
                     if element.get("zone") == f"ZONE_{self._zone}":
+                        if element.get("rssi") == 0:
+                            return None
                         return element.get(field)
         except (KeyError, TypeError):
             pass

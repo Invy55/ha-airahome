@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_DEVICE_NAME, CONF_DEVICE_UUID, CONF_MAC_ADDRESS, CONF_NUM_ZONES, DEFAULT_NUM_ZONES, DEFAULT_SHORT_NAME, DOMAIN
-from .coordinator import AiraDataUpdateCoordinator
+from .coordinator import AiraDataUpdateCoordinator, _parse_error
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,7 +76,20 @@ async def async_setup_entry(
             icon=("mdi:pump-off", "mdi:pump"),
             entity_category=EntityCategory.DIAGNOSTIC
         ),
-        AiraAlarmsBinarySensor(coordinator, entry)
+        AiraProblemBinarySensor(
+            coordinator,
+            entry,
+            unique_id_suffix="alarms",
+            severities=("critical", "error"),
+            include_stopping_flags=True,
+        ),
+        AiraProblemBinarySensor(
+            coordinator,
+            entry,
+            unique_id_suffix="warnings",
+            severities=("warning", "unspecified"),
+            include_stopping_flags=False,
+        ),
     ]
     
     # PER ZONE LOOP
@@ -186,6 +199,8 @@ class AiraBinarySensor(AiraBaseBinarySensor):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
                             if isinstance(self._index, str) and element.get("zone") == self._index:
+                                if element.get("rssi") == 0:
+                                    return None
                                 value = element
                                 break
                         if isinstance(self._index, int) and len(value) >= self._index:
@@ -197,11 +212,11 @@ class AiraBinarySensor(AiraBaseBinarySensor):
         return None
 
 # ============================================================================
-# ALARM SENSOR
-# ===========================================================================
+# PROBLEM (ALARMS / WARNINGS) SENSOR
+# ============================================================================
 
-class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
-    """Binary sensor for alarms status."""
+class AiraProblemBinarySensor(AiraBaseBinarySensor):
+    """Problem binary sensor that filters alarms or warnings by severity."""
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
@@ -209,43 +224,83 @@ class AiraAlarmsBinarySensor(AiraBaseBinarySensor):
         self,
         coordinator: AiraDataUpdateCoordinator,
         entry: ConfigEntry,
+        unique_id_suffix: str,
+        severities: tuple[str, ...],
+        include_stopping_flags: bool = False,
     ) -> None:
-        """Initialise alarms binary sensor."""
-        unique_id_suffix = "alarms"
+        """Initialise problem binary sensor."""
         super().__init__(coordinator, entry, unique_id_suffix, None)
+        self._severities = tuple(s.lower() for s in severities)
+        self._include_stopping_flags = include_stopping_flags
+        self._prefix_label = "error" if any(s in self._severities for s in ("critical", "error")) else "warning"
+
+    def _get_matching_errors(self) -> list[tuple[str, str, str, str, Any]]:
+        """Return parsed error tuples matching this sensor's severity filter, deduplicated by raw_code."""
+        if not self.coordinator.data:
+            return []
+
+        # Get both error lists since some errors appear in only one of them
+        state_list = self.coordinator.data.get("state", {}).get("errors", [])
+        system_list = self.coordinator.data.get("system_check_state", {}).get("errors", [])
+
+        seen_raw_codes: set[str] = set()
+        matching: list[tuple[str, str, str, str, Any]] = []
+
+        for err in state_list + system_list:
+            source, display_code, raw_code, severity, occurred_at = _parse_error(err)
+            if raw_code != "unknown" and raw_code not in seen_raw_codes:
+                seen_raw_codes.add(raw_code)
+                if severity.lower() in self._severities:
+                    matching.append((source, display_code, raw_code, severity, occurred_at))
+
+        return matching
 
     @property
-    def is_on(self) -> bool: # type: ignore
-        """Return true if there are active alarms."""
+    def is_on(self) -> bool:
+        """Return true if any matching problems are active."""
         if not self.coordinator.data:
             return False
-        
-        state = self.coordinator.data.get("state", {})
-        error_meta = state.get("error_metadata", {})
-        return bool(
-            error_meta.get("hp_has_stopping_alarms")
-            or error_meta.get("hp_has_acknowledgeable_alarms")
-            or error_meta.get("compressor_has_stopping_alarm")
-        )
+
+        if self._include_stopping_flags:
+            state = self.coordinator.data.get("state", {})
+            error_meta = state.get("error_metadata", {})
+            if (
+                error_meta.get("hp_has_stopping_alarms")
+                or error_meta.get("hp_has_acknowledgeable_alarms")
+                or error_meta.get("compressor_has_stopping_alarm")
+            ):
+                return True
+
+        return len(self._get_matching_errors()) > 0
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]: # type: ignore
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional attributes."""
-        state = self.coordinator.data.get("state", {})
-        error_meta = state.get("error_metadata", {})
-        errors = state.get("errors", [])
-        
-        attributes = {
-            "stopping_alarms": "🚨" if error_meta.get("hp_has_stopping_alarms", False) else "🟢",
-            "acknowledgeable_alarms": "🚨" if error_meta.get("hp_has_acknowledgeable_alarms", False) else "🟢",
-            "compressor_alarms": "🚨" if error_meta.get("compressor_has_stopping_alarm", False) else "🟢",
-            "error_count": len(errors),
-        }
-        
-        # Add first few errors
-        if errors:
-            for i, error in enumerate(errors[:3], 1):
-                attributes[f"error_{i}_code"] = error.get("code", "Unknown")
-                attributes[f"error_{i}_message"] = error.get("message", "Unknown")
-        
+        attributes: dict[str, Any] = {}
+
+        if self._include_stopping_flags:
+            state = self.coordinator.data.get("state", {})
+            error_meta = state.get("error_metadata", {})
+            attributes["stopping_alarms"] = "🚨" if error_meta.get("hp_has_stopping_alarms", False) else "🟢"
+            attributes["acknowledgeable_alarms"] = "🚨" if error_meta.get("hp_has_acknowledgeable_alarms", False) else "🟢"
+            attributes["compressor_alarms"] = "🚨" if error_meta.get("compressor_has_stopping_alarm", False) else "🟢"
+
+        matching = self._get_matching_errors()
+        attributes[f"{self._prefix_label}_count"] = len(matching)
+
+        for i, (source, display_code, raw_code, severity, occurred_at) in enumerate(matching[:5], 1):
+            attributes[f"{self._prefix_label}_{i}_source"] = source
+            attributes[f"{self._prefix_label}_{i}_code"] = display_code
+            attributes[f"{self._prefix_label}_{i}_severity"] = severity
+            if occurred_at:
+                attributes[f"{self._prefix_label}_{i}_occurred_at"] = (
+                    occurred_at.isoformat() if hasattr(occurred_at, "isoformat") else str(occurred_at)
+                )
+            else:
+                first_seen = self.coordinator._active_errors.get(raw_code)
+                if first_seen:
+                    attributes[f"{self._prefix_label}_{i}_first_seen_at"] = (
+                        first_seen[1] if isinstance(first_seen, tuple) else first_seen
+                    )
+
         return attributes

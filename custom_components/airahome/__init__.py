@@ -12,7 +12,10 @@ from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.helpers.translation import async_get_translations
+
+from bleak.backends.device import BLEDevice
 from pyairahome import AiraHome
+from pyairahome.utils.exceptions import BLEConnectionError
 
 from .const import (
     BLE_CONNECT_TIMEOUT,
@@ -25,7 +28,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import AiraDataUpdateCoordinator
-from .services import async_setup_services, async_unload_services
+from .services import async_setup_services
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,6 +38,22 @@ async def async_get_translation(hass: HomeAssistant, selector_name: str, key: st
     """Return a translated selector option for the given name and key, falling back to the key itself."""
     translations = await async_get_translations(hass, hass.config.language, "selector", [DOMAIN])
     return translations.get(f"component.{DOMAIN}.selector.{selector_name}.options.{key}", key)
+
+async def connect_with_cache_retry(aira: AiraHome, ble_device: BLEDevice, mac_address: str, timeout: int = BLE_CONNECT_TIMEOUT) -> bool:
+    """Connect to BLE device, retrying once with cache clear on failure."""
+    try:
+        if await aira.ble._connect_device(ble_device, timeout=timeout):
+            _LOGGER.info("Successfully connected to Aira device via BLE")
+            return True
+        raise BLEConnectionError("Initial BLE connection failed")
+    except Exception as conn_err:
+        _LOGGER.warning("Initial BLE connection attempt failed: %s. Attempting cache clear and retry.", conn_err)
+        await aira.ble._clear_cache(mac_address)
+        await asyncio.sleep(0.5)
+        if await aira.ble._connect_device(ble_device, timeout=timeout):
+            _LOGGER.info("Successfully connected to Aira device via BLE after CLEARING CACHE.")
+            return True
+        raise BLEConnectionError("BLE connection retry failed after clearing cache")
 
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.WATER_HEATER, Platform.CLIMATE]
@@ -113,15 +132,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     # Connect aira instance to the device
     try:
-        connected = await aira.ble._connect_device(ble_device, timeout=BLE_CONNECT_TIMEOUT)
-
-        if connected:
-            _LOGGER.info("Successfully connected to Aira device via BLE")
-        else:
-            raise ValueError("BLE connection failed, connection returned False/None")
-    except Exception as err:
-        _LOGGER.error("Initial BLE connection attempt failed.")
-        raise ConfigEntryNotReady("Initial BLE connection failed. Please ensure the device is powered on and within range.") from err
+        await connect_with_cache_retry(aira, ble_device, mac_address)
+    except Exception as conn_err:
+        _LOGGER.error("Initial BLE connection attempt failed: %s", conn_err)
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN,
+            translation_key="initial_ble_connection_failed",
+        ) from conn_err
     
     # Get scan interval from options or use default
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -141,6 +158,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "coordinator": coordinator,
         "aira": aira
     }
+    entry.async_on_unload(coordinator.async_shutdown)
     
     # Forward the setup to the platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -180,8 +198,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.info("Aira integration unloaded successfully")
     else:
         _LOGGER.warning("Failed to unload some platforms")
-
-    if not hass.data[DOMAIN]:
-        async_unload_services(hass)
 
     return unload_ok

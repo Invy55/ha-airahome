@@ -27,6 +27,33 @@ BLE_DISCOVERY_TIMEOUT = 20  # seconds - timeout for BLE device discovery
 BLE_COMMAND_SLEEP = 1.5  # seconds - delay between BLE commands to avoid overwhelming the device
 BLE_RECONNECT_BACKOFF = (30, 60, 120, 240)  # seconds to wait after each reconnect attempt before the next
 
+# BLE errors that can indicate a stale GATT cache
+CACHE_ERROR_PATTERNS: tuple[str, ...] = (
+    "not permitted",
+    "write not permitted",
+    "read not permitted",
+    "invalid handle",
+    "attribute not found",
+    "status=3",
+    "status 3",
+    "status=1",
+    "status 1",
+    "status=0x03",
+    "status=0x01",
+    "write_not_permitted",
+    "invalid_handle",
+    "failed to get services",
+    "characteristic not found",
+    "descriptor not found",
+)
+
+# Error code prefixes by protocol source
+ERROR_SOURCE_PREFIXES: dict[str, str] = {
+    "ccv": "CCV_ERROR_CODE_",
+    "aira": "AIRA_ERROR_CODE_",
+    "power": "POWER_ERROR_CODE_",
+}
+
 # Attributes
 ATTR_MAC_ADDRESS = "mac_address"
 ATTR_DEVICE_UUID = "device_uuid"

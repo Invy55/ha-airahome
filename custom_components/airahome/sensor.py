@@ -411,7 +411,7 @@ async def async_setup_entry(
             ),
             AiraCurveSensor(coordinator, entry,
                 zone=i,
-                heating=True        
+                heating=True
             )
             ])
         if "cooling" in configured_pump_modes:
@@ -544,6 +544,8 @@ class AiraTemperatureSensor(AiraSensorBase):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
                             if isinstance(self._index, str) and element.get("zone") == self._index:
+                                if element.get("rssi") == 0:
+                                    return None
                                 value = element
                                 break
                         if isinstance(self._index, int) and len(value) >= self._index:
@@ -603,6 +605,8 @@ class AiraHumiditySensor(AiraSensorBase):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
                             if isinstance(self._index, str) and element.get("zone") == self._index:
+                                if element.get("rssi") == 0:
+                                    return None
                                 value = element
                                 break
                         if isinstance(self._index, int) and len(value) >= self._index:
@@ -659,6 +663,8 @@ class AiraSignalStrengthSensor(AiraSensorBase):
                         for element in value:
                             # caso in cui l'elemento ha un campo zone:
                             if isinstance(self._index, str) and element.get("zone") == self._index:
+                                if element.get("rssi") == 0:
+                                    return None
                                 value = element
                                 break
                         if isinstance(self._index, int) and len(value) >= self._index:
