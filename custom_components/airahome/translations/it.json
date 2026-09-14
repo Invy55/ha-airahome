@@ -248,6 +248,7 @@
       "dhw_heating": { "name": "Riscaldamento ACS" },
       "defrosting": { "name": "Sbrinamento" },
       "ou_pump": { "name": "Circolatore Primario UE" },
+      "weather_heating_permissive": { "name": "Consenso Riscaldamento Meteo" },
       "alarms": { "name": "Allarmi" },
       "warnings": { "name": "Avvisi" },
       "zone_1_circulator": { "name": "Zona 1 Circolatore" },

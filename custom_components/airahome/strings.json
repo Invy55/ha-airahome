@@ -248,6 +248,7 @@
       "dhw_heating": { "name": "DHW Heating" },
       "defrosting": { "name": "Defrosting" },
       "ou_pump": { "name": "OU Primary Circulator" },
+      "weather_heating_permissive": { "name": "Weather Heating Permissive" },
       "alarms": { "name": "Alarms" },
       "warnings": { "name": "Warnings" },
       "zone_1_circulator": { "name": "Zone 1 Circulator" },

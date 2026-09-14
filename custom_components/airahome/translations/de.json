@@ -248,6 +248,7 @@
       "dhw_heating": { "name": "Warmwasserheizung" },
       "defrosting": { "name": "Abtauen" },
       "ou_pump": { "name": "Außeneinheit-Primärumwälzpumpe" },
+      "weather_heating_permissive": { "name": "Wetter-Heizfreigabe" },
       "alarms": { "name": "Alarme" },
       "warnings": { "name": "Warnungen" },
       "zone_1_circulator": { "name": "Zone 1 Umwälzpumpe" },

@@ -76,6 +76,7 @@ async def async_setup_entry(
             icon=("mdi:pump-off", "mdi:pump"),
             entity_category=EntityCategory.DIAGNOSTIC
         ),
+        AiraWeatherHeatingPermissiveBinarySensor(coordinator, entry),
         AiraProblemBinarySensor(
             coordinator,
             entry,
@@ -210,6 +211,80 @@ class AiraBinarySensor(AiraBaseBinarySensor):
             except (KeyError, ValueError, TypeError):
                 return None
         return None
+
+# ============================================================================
+# WEATHER HEATING PERMISSIVE SENSOR
+# ============================================================================
+
+class AiraWeatherHeatingPermissiveBinarySensor(AiraBaseBinarySensor):
+    """Whether the outdoor temperature averages permit heating mode."""
+
+    # average is misspelled by aira ¯\_(ツ)_/¯
+    _AVERAGE_KEYS = {
+        "24h": "ambient_temp_avarage_24_h",
+        "3h": "ambient_temp_avarage_3_h",
+        "1h": "ambient_temp_avarage_1_h",
+    }
+
+    # https://airausersforum.com/t/outdoor-conditions-temperature-required-before-the-heat-pump-will-operate/490
+    _TEMPERATURE_LIMITS = {"24h": 20.0, "3h": 18.0, "1h": 16.0}
+
+    def __init__(
+        self,
+        coordinator: AiraDataUpdateCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialise the weather heating permissive sensor."""
+        super().__init__(
+            coordinator,
+            entry,
+            "weather_heating_permissive",
+            ("mdi:radiator-off", "mdi:radiator"),
+            entity_category=EntityCategory.DIAGNOSTIC
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true when every outdoor temperature condition is met."""
+        attributes = self.extra_state_attributes
+        if attributes["average_temperature_24h"] is None:
+            return None
+
+        return all(
+            attributes[f"average_temperature_{period}"] < limit
+            for period, limit in self._TEMPERATURE_LIMITS.items()
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return temperature averages and the failed conditions."""
+        try:
+            heating_mode = self.coordinator.data["system_check_state"]["heating_mode"]
+            averages = {
+                period: float(heating_mode[key])
+                for period, key in self._AVERAGE_KEYS.items()
+            }
+        except (KeyError, TypeError, ValueError):
+            return {
+                "average_temperature_24h": None,
+                "average_temperature_3h": None,
+                "average_temperature_1h": None,
+                "reason": "unknown",
+            }
+
+        failed_conditions = []
+        for period, limit in self._TEMPERATURE_LIMITS.items():
+            if averages[period] >= limit:
+                failed_conditions.append(
+                    f"{period} {'>' if averages[period] > limit else '='} {limit:g}°C"
+                )
+
+        return {
+            "average_tempe`rature_24h": averages["24h"],
+            "average_temperature_3h": averages["3h"],
+            "average_temperature_1h": averages["1h"],
+            "reason": ", ".join(failed_conditions) if failed_conditions else "all conditions met",
+        }
 
 # ============================================================================
 # PROBLEM (ALARMS / WARNINGS) SENSOR
