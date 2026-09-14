@@ -280,7 +280,7 @@ class AiraWeatherHeatingPermissiveBinarySensor(AiraBaseBinarySensor):
                 )
 
         return {
-            "average_tempe`rature_24h": averages["24h"],
+            "average_temperature_24h": averages["24h"],
             "average_temperature_3h": averages["3h"],
             "average_temperature_1h": averages["1h"],
             "reason": ", ".join(failed_conditions) if failed_conditions else "all conditions met",
